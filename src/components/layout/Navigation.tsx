@@ -1,0 +1,79 @@
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Home, CheckSquare, BookOpen, Smile, Sparkles, Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+const navItems = [
+  { path: "/", icon: Home, label: "Home" },
+  { path: "/habits", icon: CheckSquare, label: "Habits" },
+  { path: "/resources", icon: BookOpen, label: "Learn" },
+  { path: "/mood", icon: Smile, label: "Mood" },
+  { path: "/prompt", icon: Sparkles, label: "Inspire" },
+];
+
+export function Navigation() {
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <>
+      {/* Desktop Navigation */}
+      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
+              <Sparkles className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="font-display text-xl font-semibold text-foreground">ArtMind</span>
+          </Link>
+
+          <div className="flex items-center gap-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link key={item.path} to={item.path}>
+                  <Button
+                    variant={isActive ? "soft" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "gap-2 transition-all duration-300",
+                      isActive && "shadow-soft"
+                    )}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </Button>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/50 pb-safe">
+        <div className="flex items-center justify-around py-2 px-4">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300",
+                  isActive
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <item.icon className={cn("w-5 h-5", isActive && "animate-pulse-soft")} />
+                <span className="text-xs font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </>
+  );
+}
