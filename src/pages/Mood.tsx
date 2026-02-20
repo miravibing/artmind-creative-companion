@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, Calendar, TrendingUp, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const moodOptions = [
   { value: 1, emoji: "😢", label: "Struggling", color: "bg-destructive/20 border-destructive/40" },
@@ -12,37 +15,72 @@ const moodOptions = [
 ];
 
 interface MoodEntry {
-  date: string;
+  id: string;
+  entry_date: string;
   mood: number;
-  note: string;
+  note: string | null;
 }
 
+const today = new Date().toISOString().split("T")[0];
+
 export default function Mood() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
-  const [moodHistory] = useState<MoodEntry[]>([
-    { date: "2024-01-07", mood: 4, note: "Good creative session today" },
-    { date: "2024-01-06", mood: 5, note: "Finished a piece I'm proud of!" },
-    { date: "2024-01-05", mood: 4, note: "Feeling inspired" },
-    { date: "2024-01-04", mood: 3, note: "Average day, bit tired" },
-    { date: "2024-01-03", mood: 5, note: "Great flow state" },
-    { date: "2024-01-02", mood: 3, note: "Creative block" },
-    { date: "2024-01-01", mood: 4, note: "New year motivation!" },
-  ]);
+  const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [todayEntry, setTodayEntry] = useState<MoodEntry | null>(null);
 
-  const saveMood = () => {
-    if (selectedMood === null) return;
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    setNote("");
-    setSelectedMood(null);
+  useEffect(() => {
+    if (user) fetchMoodHistory();
+  }, [user]);
+
+  const fetchMoodHistory = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("mood_entries")
+      .select("*")
+      .order("entry_date", { ascending: false })
+      .limit(10);
+
+    if (error) { toast({ title: "Error loading moods", variant: "destructive" }); setLoading(false); return; }
+
+    setMoodHistory(data ?? []);
+    const existing = data?.find((e) => e.entry_date === today) ?? null;
+    setTodayEntry(existing);
+    if (existing) {
+      setSelectedMood(existing.mood);
+      setNote(existing.note ?? "");
+    }
+    setLoading(false);
   };
 
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
+  const saveMood = async () => {
+    if (selectedMood === null) return;
+
+    if (todayEntry) {
+      const { error } = await supabase
+        .from("mood_entries")
+        .update({ mood: selectedMood, note })
+        .eq("id", todayEntry.id);
+      if (error) { toast({ title: "Error saving mood", variant: "destructive" }); return; }
+    } else {
+      const { error } = await supabase
+        .from("mood_entries")
+        .insert({ user_id: user!.id, mood: selectedMood, note, entry_date: today });
+      if (error) { toast({ title: "Error saving mood", variant: "destructive" }); return; }
+    }
+
+    setSaved(true);
+    toast({ title: "Mood saved! 💜" });
+    fetchMoodHistory();
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const todayFormatted = new Date().toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric",
   });
 
   return (
@@ -61,7 +99,12 @@ export default function Mood() {
         <div className="bg-card rounded-2xl border border-border/50 shadow-card p-6 mb-6 animate-slide-up">
           <div className="flex items-center gap-3 text-muted-foreground mb-4">
             <Calendar className="w-5 h-5" />
-            <span>{today}</span>
+            <span>{todayFormatted}</span>
+            {todayEntry && (
+              <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                Editing today's entry
+              </span>
+            )}
           </div>
 
           {/* Mood Selection */}
@@ -88,9 +131,7 @@ export default function Mood() {
 
           {/* Notes */}
           <div className="mb-6">
-            <label className="text-sm text-muted-foreground mb-2 block">
-              Add a note (optional)
-            </label>
+            <label className="text-sm text-muted-foreground mb-2 block">Add a note (optional)</label>
             <textarea
               placeholder="What's on your creative mind today?"
               value={note}
@@ -100,7 +141,6 @@ export default function Mood() {
             />
           </div>
 
-          {/* Save Button */}
           <Button
             variant={saved ? "success" : "gradient"}
             size="lg"
@@ -109,15 +149,9 @@ export default function Mood() {
             className="w-full gap-2"
           >
             {saved ? (
-              <>
-                <Heart className="w-5 h-5" />
-                Mood Saved! ✨
-              </>
+              <><Heart className="w-5 h-5" />Mood Saved! ✨</>
             ) : (
-              <>
-                <Save className="w-5 h-5" />
-                Save Today's Mood
-              </>
+              <><Save className="w-5 h-5" />{todayEntry ? "Update Today's Mood" : "Save Today's Mood"}</>
             )}
           </Button>
         </div>
@@ -129,37 +163,42 @@ export default function Mood() {
             <h2 className="font-display text-xl font-semibold text-foreground">Recent History</h2>
           </div>
 
-          <div className="space-y-3">
-            {moodHistory.map((entry, index) => {
-              const moodData = moodOptions.find((m) => m.value === entry.mood);
-              return (
-                <div
-                  key={entry.date}
-                  className="bg-card rounded-xl border border-border/50 shadow-soft p-4 flex items-center gap-4 animate-slide-up"
-                  style={{ animationDelay: `${(index + 2) * 0.1}s` }}
-                >
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-card rounded-xl border border-border/50 h-16 animate-pulse" />
+              ))}
+            </div>
+          ) : moodHistory.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No mood entries yet. Log your first one above! 💜</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {moodHistory.map((entry, index) => {
+                const moodData = moodOptions.find((m) => m.value === entry.mood);
+                return (
                   <div
-                    className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
-                      moodData?.color
-                    )}
+                    key={entry.id}
+                    className="bg-card rounded-xl border border-border/50 shadow-soft p-4 flex items-center gap-4 animate-slide-up"
+                    style={{ animationDelay: `${(index + 2) * 0.1}s` }}
                   >
-                    {moodData?.emoji}
+                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-2xl", moodData?.color)}>
+                      {moodData?.emoji}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">{entry.note || "No note added"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(entry.entry_date + "T12:00:00").toLocaleDateString("en-US", {
+                          weekday: "short", month: "short", day: "numeric",
+                        })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{entry.note}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(entry.date).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
