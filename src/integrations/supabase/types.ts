@@ -14,7 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      habit_completions: {
+        Row: {
+          completed_date: string
+          created_at: string
+          habit_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_date?: string
+          created_at?: string
+          habit_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_date?: string
+          created_at?: string
+          habit_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_completions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          last_completed_date: string | null
+          name: string
+          streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          last_completed_date?: string | null
+          name: string
+          streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          last_completed_date?: string | null
+          name?: string
+          streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mood_entries: {
+        Row: {
+          created_at: string
+          entry_date: string
+          id: string
+          mood: number
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entry_date?: string
+          id?: string
+          mood: number
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entry_date?: string
+          id?: string
+          mood?: number
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      prompt_favorites: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          prompt_text: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          prompt_text: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          prompt_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
