@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Sparkles, RefreshCw, Lightbulb } from "lucide-react";
+import { useState, useEffect } from "react";
+import { RefreshCw, Lightbulb, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
-const prompts = [
+const fallbackPrompts = [
   "Create a character who embodies the feeling of a Sunday morning.",
   "Design an impossible architecture that defies gravity.",
   "Illustrate a memory you can almost taste.",
@@ -15,16 +16,39 @@ const prompts = [
 ];
 
 export function DailyPromptCard() {
-  const [currentPrompt, setCurrentPrompt] = useState(prompts[0]);
+  const [currentPrompt, setCurrentPrompt] = useState(fallbackPrompts[0]);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const refreshPrompt = () => {
+  useEffect(() => {
+    generateAIPrompt();
+  }, []);
+
+  const generateAIPrompt = async () => {
+    setIsGenerating(true);
     setIsAnimating(true);
-    setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * prompts.length);
-      setCurrentPrompt(prompts[randomIndex]);
-      setIsAnimating(false);
-    }, 500);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-prompt", {
+        body: {},
+      });
+
+      if (error || data?.error) throw new Error(data?.error ?? "AI error");
+
+      setTimeout(() => {
+        setCurrentPrompt(data.text);
+        setIsAnimating(false);
+        setIsGenerating(false);
+      }, 400);
+    } catch {
+      // Fallback silently
+      const randomIndex = Math.floor(Math.random() * fallbackPrompts.length);
+      setTimeout(() => {
+        setCurrentPrompt(fallbackPrompts[randomIndex]);
+        setIsAnimating(false);
+        setIsGenerating(false);
+      }, 400);
+    }
   };
 
   return (
@@ -38,25 +62,35 @@ export function DailyPromptCard() {
           <div className="p-2 rounded-xl bg-primary/10">
             <Lightbulb className="w-5 h-5 text-primary" />
           </div>
-          <div>
+          <div className="flex-1">
             <h3 className="font-display text-lg font-semibold text-foreground">Daily Inspiration</h3>
-            <p className="text-sm text-muted-foreground">Your creative spark for today</p>
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <Wand2 className="w-3 h-3 text-accent" />
+              AI-powered for today
+            </p>
           </div>
         </div>
 
         <div className={cn(
-          "bg-secondary/50 rounded-xl p-5 mb-5 transition-all duration-500",
+          "bg-secondary/50 rounded-xl p-5 mb-5 transition-all duration-500 min-h-[80px] flex items-center",
           isAnimating ? "opacity-0 scale-95" : "opacity-100 scale-100"
         )}>
-          <p className="font-display text-xl md:text-2xl text-foreground leading-relaxed italic">
-            "{currentPrompt}"
-          </p>
+          {isGenerating && !isAnimating ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Wand2 className="w-4 h-4 animate-pulse text-primary" />
+              Generating inspiration…
+            </div>
+          ) : (
+            <p className="font-display text-xl md:text-2xl text-foreground leading-relaxed italic">
+              "{currentPrompt}"
+            </p>
+          )}
         </div>
 
         <Button
           variant="soft"
-          onClick={refreshPrompt}
-          disabled={isAnimating}
+          onClick={generateAIPrompt}
+          disabled={isGenerating || isAnimating}
           className="gap-2"
         >
           <RefreshCw className={cn("w-4 h-4", isAnimating && "animate-spin")} />

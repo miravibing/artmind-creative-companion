@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Sparkles, RefreshCw, Copy, Heart } from "lucide-react";
+import { Sparkles, RefreshCw, Copy, Heart, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-const prompts = [
+const fallbackPrompts = [
   { text: "Create a character who embodies the feeling of a Sunday morning.", category: "Character Design" },
   { text: "Design an impossible architecture that defies gravity but feels livable.", category: "Environment" },
   { text: "Illustrate a memory you can almost taste.", category: "Abstract" },
@@ -19,6 +19,7 @@ const prompts = [
   { text: "Draw what courage looks like as a tangible object.", category: "Symbolic" },
 ];
 
+interface Prompt { text: string; category: string; }
 interface Favorite {
   id: string;
   prompt_text: string;
@@ -27,14 +28,20 @@ interface Favorite {
 
 export default function Prompt() {
   const { user } = useAuth();
-  const [currentPrompt, setCurrentPrompt] = useState(prompts[0]);
+  const [currentPrompt, setCurrentPrompt] = useState<Prompt>(fallbackPrompts[0]);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     if (user) fetchFavorites();
   }, [user]);
+
+  // Generate an AI prompt on first load
+  useEffect(() => {
+    generateAIPrompt();
+  }, []);
 
   const fetchFavorites = async () => {
     const { data } = await supabase
@@ -44,13 +51,48 @@ export default function Prompt() {
     setFavorites(data ?? []);
   };
 
-  const refreshPrompt = () => {
+  const generateAIPrompt = async () => {
+    setIsGenerating(true);
     setIsAnimating(true);
-    setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * prompts.length);
-      setCurrentPrompt(prompts[randomIndex]);
-      setIsAnimating(false);
-    }, 600);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-prompt", {
+        body: {},
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        // Surface rate limit / payment errors to user
+        toast({
+          title: "AI Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        // Fall back to a random local prompt
+        const randomIndex = Math.floor(Math.random() * fallbackPrompts.length);
+        setTimeout(() => {
+          setCurrentPrompt(fallbackPrompts[randomIndex]);
+          setIsAnimating(false);
+        }, 300);
+        return;
+      }
+
+      setTimeout(() => {
+        setCurrentPrompt({ text: data.text, category: data.category });
+        setIsAnimating(false);
+      }, 300);
+    } catch (err) {
+      console.error("Failed to generate AI prompt:", err);
+      // Silent fallback to local prompts
+      const randomIndex = Math.floor(Math.random() * fallbackPrompts.length);
+      setTimeout(() => {
+        setCurrentPrompt(fallbackPrompts[randomIndex]);
+        setIsAnimating(false);
+      }, 300);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const copyPrompt = () => {
@@ -100,7 +142,10 @@ export default function Prompt() {
           <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
             Creative Inspiration
           </h1>
-          <p className="text-muted-foreground text-lg">Let your imagination run wild</p>
+          <p className="text-muted-foreground text-lg flex items-center justify-center gap-2">
+            <Wand2 className="w-4 h-4 text-primary" />
+            AI-powered prompts, uniquely yours
+          </p>
         </div>
 
         {/* Main Prompt Card */}
@@ -112,6 +157,12 @@ export default function Prompt() {
                 {currentPrompt.category}
               </span>
             </div>
+            <div className="absolute top-4 right-4">
+              <span className="px-2 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent flex items-center gap-1">
+                <Wand2 className="w-3 h-3" />
+                AI
+              </span>
+            </div>
             <div className="pt-16 pb-8 px-6 md:px-10">
               <div
                 className={cn(
@@ -119,9 +170,16 @@ export default function Prompt() {
                   isAnimating ? "opacity-0 scale-95 blur-sm" : "opacity-100 scale-100"
                 )}
               >
-                <p className="font-display text-2xl md:text-3xl text-center text-foreground leading-relaxed">
-                  "{currentPrompt.text}"
-                </p>
+                {isGenerating && !isAnimating ? (
+                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                    <Sparkles className="w-8 h-8 animate-pulse text-primary" />
+                    <span className="text-sm">Generating your prompt…</span>
+                  </div>
+                ) : (
+                  <p className="font-display text-2xl md:text-3xl text-center text-foreground leading-relaxed">
+                    "{currentPrompt.text}"
+                  </p>
+                )}
               </div>
             </div>
             <div className="border-t border-border/50 p-4 flex items-center justify-between bg-muted/30">
@@ -138,8 +196,17 @@ export default function Prompt() {
                   <Copy className="w-5 h-5" />
                 </Button>
               </div>
-              <Button variant="gradient" onClick={refreshPrompt} disabled={isAnimating} className="gap-2">
-                <RefreshCw className={cn("w-4 h-4", isAnimating && "animate-spin")} />
+              <Button
+                variant="gradient"
+                onClick={generateAIPrompt}
+                disabled={isGenerating || isAnimating}
+                className="gap-2"
+              >
+                {isGenerating ? (
+                  <Sparkles className="w-4 h-4 animate-pulse" />
+                ) : (
+                  <RefreshCw className={cn("w-4 h-4", isAnimating && "animate-spin")} />
+                )}
                 New Prompt
               </Button>
             </div>
