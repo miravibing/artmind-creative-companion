@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, CheckSquare, BookOpen, Smile, Sparkles, LogOut, LogIn, User } from "lucide-react";
+import { Home, CheckSquare, BookOpen, Smile, Sparkles, Trophy, LogOut, LogIn, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +11,7 @@ const navItems = [
   { path: "/resources", icon: BookOpen, label: "Learn" },
   { path: "/mood", icon: Smile, label: "Mood" },
   { path: "/prompt", icon: Sparkles, label: "Inspire" },
+  { path: "/challenges", icon: Trophy, label: "Challenges" },
 ];
 
 export function Navigation() {

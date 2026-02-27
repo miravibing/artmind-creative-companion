@@ -11,6 +11,7 @@ import Resources from "./pages/Resources";
 import Mood from "./pages/Mood";
 import Prompt from "./pages/Prompt";
 import Auth from "./pages/Auth";
+import Challenges from "./pages/Challenges";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/resources" element={<Resources />} />
             <Route path="/mood" element={<Mood />} />
             <Route path="/prompt" element={<Prompt />} />
+            <Route path="/challenges" element={<Challenges />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
