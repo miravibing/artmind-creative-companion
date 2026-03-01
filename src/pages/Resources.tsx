@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, Play, FileText, Search, Star, Clock, ExternalLink } from "lucide-react";
+import { BookOpen, Play, FileText, Search, Clock, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Resource {
@@ -11,72 +11,190 @@ interface Resource {
   duration: string;
   rating: number;
   image: string;
+  platform: string;
+  level: "Beginner" | "Intermediate" | "Advanced";
+  link: string;
+  source: string;
 }
 
 const resources: Resource[] = [
+  // Anatomy & Figure Drawing
   {
     id: 1,
-    title: "Mastering Color Theory",
-    description: "Learn how to create harmonious color palettes that evoke emotion.",
+    title: "Figure Drawing Basics",
+    description: "A clear introduction to gesture and figure construction for beginners. Covers line of action, proportions, and quick poses.",
     type: "video",
-    category: "Fundamentals",
-    duration: "15 min",
+    category: "Anatomy & Figure Drawing",
+    duration: "12 min",
     rating: 4.9,
-    image: "🎨",
+    image: "🦴",
+    platform: "YouTube",
+    level: "Beginner",
+    link: "https://www.youtube.com/watch?v=74HR59yFZ7Y",
+    source: "Proko",
   },
   {
     id: 2,
-    title: "Gesture Drawing Essentials",
-    description: "Capture movement and life in your figure drawings with quick gesture techniques.",
+    title: "Anatomy for Artists – Full Course",
+    description: "Comprehensive free anatomy course covering skeletal and muscular structure for realistic figure drawing.",
     type: "course",
-    category: "Drawing",
-    duration: "2 hours",
+    category: "Anatomy & Figure Drawing",
+    duration: "3+ hours",
     rating: 4.8,
-  image: "✏️",
+    image: "🏋️",
+    platform: "YouTube",
+    level: "Intermediate",
+    link: "https://www.youtube.com/playlist?list=PLtG4P3lq4RDnBocKSAEgUvat3lIK1uSrW",
+    source: "Proko",
   },
+  // Perspective
   {
     id: 3,
-    title: "Digital Painting Workflow",
-    description: "Professional techniques for creating stunning digital illustrations.",
+    title: "Perspective Drawing – The Basics",
+    description: "Learn 1-point, 2-point, and 3-point perspective with easy-to-follow demonstrations and exercises.",
     type: "video",
-    category: "Digital Art",
-    duration: "25 min",
-    rating: 4.7,
-    image: "🖌️",
+    category: "Perspective",
+    duration: "18 min",
+    rating: 4.8,
+    image: "📐",
+    platform: "YouTube",
+    level: "Beginner",
+    link: "https://www.youtube.com/watch?v=nAlCyQqEZSU",
+    source: "Art of Wei",
   },
   {
     id: 4,
-    title: "Overcoming Creative Block",
-    description: "Mental strategies and exercises to reignite your creative spark.",
-    type: "article",
-    category: "Wellness",
-    duration: "8 min read",
+    title: "DrawABox – Perspective Lessons",
+    description: "Structured free curriculum for building solid perspective and construction skills through deliberate practice.",
+    type: "course",
+    category: "Perspective",
+    duration: "Self-paced",
     rating: 4.9,
-    image: "💡",
+    image: "📦",
+    platform: "Website",
+    level: "Beginner",
+    link: "https://drawabox.com/lesson/1",
+    source: "DrawABox",
   },
+  // Form & Structure
   {
     id: 5,
-    title: "Anatomy for Artists",
-    description: "Understanding human anatomy to draw more realistic figures.",
-    type: "course",
-    category: "Drawing",
-    duration: "4 hours",
-    rating: 4.8,
-    image: "🦴",
+    title: "How to Draw Basic Forms",
+    description: "Break down complex subjects into simple 3D forms — spheres, boxes, and cylinders — to build confident drawings.",
+    type: "video",
+    category: "Form & Structure",
+    duration: "15 min",
+    rating: 4.7,
+    image: "🧊",
+    platform: "YouTube",
+    level: "Beginner",
+    link: "https://www.youtube.com/watch?v=3uEtdDvK6Xo",
+    source: "ModerndayJames",
   },
   {
     id: 6,
-    title: "Building a Creative Routine",
-    description: "How to establish habits that support your artistic growth.",
+    title: "Construction Drawing Techniques",
+    description: "Learn to construct complex objects and characters from simple geometric primitives with a structured approach.",
     type: "article",
-    category: "Wellness",
-    duration: "6 min read",
+    category: "Form & Structure",
+    duration: "10 min read",
     rating: 4.6,
-    image: "📅",
+    image: "🔷",
+    platform: "Website",
+    level: "Intermediate",
+    link: "https://drawabox.com/lesson/2",
+    source: "DrawABox",
+  },
+  // Lighting & Shadow
+  {
+    id: 7,
+    title: "Understanding Light and Shadow",
+    description: "Master the five elements of shading: cast shadow, core shadow, midtone, reflected light, and highlight.",
+    type: "video",
+    category: "Lighting & Shadow",
+    duration: "20 min",
+    rating: 4.9,
+    image: "💡",
+    platform: "YouTube",
+    level: "Beginner",
+    link: "https://www.youtube.com/watch?v=V3WmrWUEIJo",
+    source: "Proko",
+  },
+  {
+    id: 8,
+    title: "Painting Light & Color – Marco Bucci",
+    description: "A free 10-part video series on painting realistic light, color temperature, and atmospheric depth.",
+    type: "course",
+    category: "Lighting & Shadow",
+    duration: "2+ hours",
+    rating: 4.9,
+    image: "🌅",
+    platform: "YouTube",
+    level: "Intermediate",
+    link: "https://www.youtube.com/playlist?list=PLLmXZMqb_9sbNLM83NrM005vRQHw1yTKn",
+    source: "Marco Bucci",
+  },
+  // Color Theory
+  {
+    id: 9,
+    title: "Color Theory for Artists",
+    description: "Learn how hue, saturation, and value work together to create harmonious and expressive color palettes.",
+    type: "video",
+    category: "Color Theory",
+    duration: "14 min",
+    rating: 4.8,
+    image: "🎨",
+    platform: "YouTube",
+    level: "Beginner",
+    link: "https://www.youtube.com/watch?v=AvgCkHrcj90",
+    source: "Blender Guru",
+  },
+  {
+    id: 10,
+    title: "Color and Light – Free Resource Guide",
+    description: "Comprehensive written guide to understanding warm/cool relationships, limited palettes, and color mixing.",
+    type: "article",
+    category: "Color Theory",
+    duration: "12 min read",
+    rating: 4.7,
+    image: "🌈",
+    platform: "Website",
+    level: "Intermediate",
+    link: "https://www.ctrlpaint.com/library/color",
+    source: "Ctrl+Paint",
+  },
+  // Composition
+  {
+    id: 11,
+    title: "Composition in Art – Beginner Guide",
+    description: "Understand rule of thirds, leading lines, focal points, and visual flow to create stronger artwork.",
+    type: "video",
+    category: "Composition",
+    duration: "11 min",
+    rating: 4.7,
+    image: "🖼️",
+    platform: "YouTube",
+    level: "Beginner",
+    link: "https://www.youtube.com/watch?v=wg-So3ElA8g",
+    source: "Alphonso Dunn",
+  },
+  {
+    id: 12,
+    title: "Advanced Composition Techniques",
+    description: "Explore tangents, value grouping, visual hierarchy, and storytelling composition used by professional concept artists.",
+    type: "video",
+    category: "Composition",
+    duration: "22 min",
+    rating: 4.8,
+    image: "🎯",
+    platform: "YouTube",
+    level: "Advanced",
+    link: "https://www.youtube.com/watch?v=wg-So3ElA8g",
+    source: "ModerndayJames",
   },
 ];
 
-const categories = ["All", "Fundamentals", "Drawing", "Digital Art", "Wellness"];
+const categories = ["All", "Anatomy & Figure Drawing", "Perspective", "Form & Structure", "Lighting & Shadow", "Color Theory", "Composition"];
 const types = ["all", "video", "article", "course"] as const;
 
 export default function Resources() {
@@ -184,9 +302,12 @@ export default function Resources() {
         {/* Resources Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredResources.map((resource, index) => (
-            <div
+            <a
+              href={resource.link}
+              target="_blank"
+              rel="noopener noreferrer"
               key={resource.id}
-              className="bg-card rounded-2xl border border-border/50 shadow-card overflow-hidden hover:shadow-deep transition-all duration-300 hover:-translate-y-1 cursor-pointer animate-slide-up group"
+              className="bg-card rounded-2xl border border-border/50 shadow-card overflow-hidden hover:shadow-deep transition-all duration-300 hover:-translate-y-1 cursor-pointer animate-slide-up group block"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Header with emoji/image */}
@@ -197,8 +318,8 @@ export default function Resources() {
               </div>
 
               <div className="p-5">
-                {/* Type & Category */}
-                <div className="flex items-center gap-2 mb-3">
+                {/* Type, Category & Level */}
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <span
                     className={cn(
                       "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium",
@@ -208,13 +329,16 @@ export default function Resources() {
                     {getTypeIcon(resource.type)}
                     {resource.type}
                   </span>
-                  <span className="text-xs text-muted-foreground">{resource.category}</span>
+                  <span className="px-2 py-1 rounded-lg text-xs font-medium bg-muted text-muted-foreground">
+                    {resource.level}
+                  </span>
                 </div>
 
                 {/* Title & Description */}
-                <h3 className="font-display text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+                <h3 className="font-display text-lg font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
                   {resource.title}
                 </h3>
+                <p className="text-xs text-muted-foreground mb-2">{resource.platform} · {resource.source}</p>
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                   {resource.description}
                 </p>
@@ -226,15 +350,12 @@ export default function Resources() {
                       <Clock className="w-4 h-4" />
                       {resource.duration}
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-warning fill-warning" />
-                      {resource.rating}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{resource.category}</span>
                   </div>
                   <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
               </div>
-            </div>
+            </a>
           ))}
         </div>
 
