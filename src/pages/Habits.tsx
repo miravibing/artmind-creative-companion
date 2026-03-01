@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Check, Flame, Target, Trash2, Pencil, X, Save } from "lucide-react";
+import { Plus, Flame, Target, Trash2, Pencil, X, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
@@ -180,7 +180,6 @@ export default function Habits() {
   };
 
   const completedCount = habits.filter((h) => h.completed).length;
-  const progress = habits.length > 0 ? (completedCount / habits.length) * 100 : 0;
 
   return (
     <div className="min-h-screen gradient-hero pb-24 md:pb-8 md:pt-24">
@@ -196,19 +195,13 @@ export default function Habits() {
 
         {/* Progress Overview */}
         <div className="bg-card rounded-2xl border border-border/50 shadow-card p-6 mb-6 animate-slide-up">
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Today's Progress</span>
             <span className="font-semibold text-foreground">
               {completedCount}/{habits.length} completed
             </span>
           </div>
-          <div className="h-3 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full gradient-primary rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          {progress === 100 && habits.length > 0 && (
+          {completedCount === habits.length && habits.length > 0 && (
             <p className="text-sm text-success mt-2 flex items-center gap-2">
               <Flame className="w-4 h-4" /> Amazing! All habits completed! 🎉
             </p>
@@ -273,18 +266,17 @@ export default function Habits() {
                     <button
                       onClick={() => toggleHabit(habit.id)}
                       className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300",
+                        "w-6 h-6 rounded border-2 flex items-center justify-center transition-all duration-300 shrink-0",
                         habit.completed
-                          ? "bg-success text-success-foreground shadow-soft"
-                          : "bg-muted hover:bg-primary/10"
+                          ? "bg-success border-success text-success-foreground"
+                          : "border-muted-foreground/40 hover:border-primary"
                       )}
                     >
-                      {habit.completed ? (
-                        <Check className="w-6 h-6" />
-                      ) : (
-                        <span className="text-2xl">{habit.icon}</span>
+                      {habit.completed && (
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                       )}
                     </button>
+                    <span className="text-xl">{habit.icon}</span>
                     <div className="flex-1">
                       <h3 className={cn("font-medium text-foreground transition-all", habit.completed && "line-through opacity-60")}>
                         {habit.name}
