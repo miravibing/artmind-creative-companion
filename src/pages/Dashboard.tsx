@@ -1,16 +1,12 @@
 import { useState } from "react";
 import { DailyPromptCard } from "@/components/dashboard/DailyPromptCard";
-import { HabitStreakCard } from "@/components/dashboard/HabitStreakCard";
+import { LoginStreakCard } from "@/components/dashboard/LoginStreakCard";
 import { MoodOverviewCard } from "@/components/dashboard/MoodOverviewCard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { useLoginStreak } from "@/hooks/useLoginStreak";
 
 export default function Dashboard() {
-  // Mock data - would come from state/database
-  const [habits] = useState([
-    { id: 1, name: "30-min sketch", completed: true },
-    { id: 2, name: "Study anatomy", completed: true },
-    { id: 3, name: "Color theory practice", completed: false },
-  ]);
+  const { currentStreak, longestStreak, loading: streakLoading } = useLoginStreak();
 
   const [recentMoods] = useState([
     { date: "2024-01-01", mood: 4 },
@@ -22,8 +18,6 @@ export default function Dashboard() {
     { date: "2024-01-07", mood: 4 },
   ]);
 
-  const streak = 7;
-  const completedToday = habits.filter((h) => h.completed).length;
   const averageMood = recentMoods.reduce((acc, m) => acc + m.mood, 0) / recentMoods.length;
 
   return (
