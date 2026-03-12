@@ -25,6 +25,8 @@ export function ChallengeDetailDialog({ challenge, open, onOpenChange, onUpdate 
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [sending, setSending] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const isOwner = user?.id === challenge.user_id;
 
   useEffect(() => {
     if (open) fetchComments();
