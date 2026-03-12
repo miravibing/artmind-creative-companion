@@ -80,7 +80,14 @@ export function ChallengeDetailDialog({ challenge, open, onOpenChange, onUpdate 
         )}
 
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">{challenge.title}</DialogTitle>
+          <div className="flex items-start justify-between gap-2">
+            <DialogTitle className="font-display text-xl">{challenge.title}</DialogTitle>
+            {isOwner && (
+              <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => setEditOpen(true)}>
+                <Pencil className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
           <DialogDescription className="sr-only">Challenge details</DialogDescription>
         </DialogHeader>
 
