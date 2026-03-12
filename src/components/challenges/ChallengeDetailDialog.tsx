@@ -180,6 +180,15 @@ export function ChallengeDetailDialog({ challenge, open, onOpenChange, onUpdate 
           </div>
         </div>
       </DialogContent>
+
+      {isOwner && (
+        <EditChallengeDialog
+          challenge={challenge}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onUpdated={() => { onUpdate(); setEditOpen(false); }}
+        />
+      )}
     </Dialog>
   );
 }
