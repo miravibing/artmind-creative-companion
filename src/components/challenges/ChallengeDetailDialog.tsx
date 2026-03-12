@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Challenge } from "@/pages/Challenges";
+import { EditChallengeDialog } from "./EditChallengeDialog";
 
 interface Comment {
   id: string;
