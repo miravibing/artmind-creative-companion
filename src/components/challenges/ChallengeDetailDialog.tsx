@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Bookmark, Users, Send, Trash2, Calendar } from "lucide-react";
+import { Heart, Bookmark, Users, Send, Trash2, Calendar, Pencil } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Challenge } from "@/pages/Challenges";
+import { EditChallengeDialog } from "./EditChallengeDialog";
 
 interface Comment {
   id: string;
@@ -24,6 +25,8 @@ export function ChallengeDetailDialog({ challenge, open, onOpenChange, onUpdate 
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [sending, setSending] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const isOwner = user?.id === challenge.user_id;
 
   useEffect(() => {
     if (open) fetchComments();
@@ -77,7 +80,14 @@ export function ChallengeDetailDialog({ challenge, open, onOpenChange, onUpdate 
         )}
 
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">{challenge.title}</DialogTitle>
+          <div className="flex items-start justify-between gap-2">
+            <DialogTitle className="font-display text-xl">{challenge.title}</DialogTitle>
+            {isOwner && (
+              <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => setEditOpen(true)}>
+                <Pencil className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
           <DialogDescription className="sr-only">Challenge details</DialogDescription>
         </DialogHeader>
 
@@ -170,6 +180,15 @@ export function ChallengeDetailDialog({ challenge, open, onOpenChange, onUpdate 
           </div>
         </div>
       </DialogContent>
+
+      {isOwner && (
+        <EditChallengeDialog
+          challenge={challenge}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onUpdated={() => { onUpdate(); setEditOpen(false); }}
+        />
+      )}
     </Dialog>
   );
 }
