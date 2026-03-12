@@ -48,10 +48,10 @@ export default function Dashboard() {
           {/* Stats Column */}
           <div className="space-y-6">
             <div className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
-              <HabitStreakCard
-                streak={streak}
-                totalHabits={habits.length}
-                completedToday={completedToday}
+              <LoginStreakCard
+                currentStreak={currentStreak}
+                longestStreak={longestStreak}
+                loading={streakLoading}
               />
             </div>
             <div className="animate-slide-up" style={{ animationDelay: "0.4s" }}>
