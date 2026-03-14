@@ -17,7 +17,7 @@ const navItems = [
 
 export function Navigation() {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
