@@ -30,7 +30,7 @@ export function DailyPromptCard() {
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-prompt", {
-        body: {},
+        body: { seed: Math.random().toString(36).slice(2, 10) },
       });
 
       if (error || data?.error) throw new Error(data?.error ?? "AI error");

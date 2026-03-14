@@ -35,12 +35,40 @@ serve(async (req) => {
       );
     }
 
-    const { categories, difficulty, mode } = await req.json().catch(() => ({}));
+    const { categories, difficulty, mode, seed } = await req.json().catch(() => ({}));
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     // mode: "structured" (new) or "simple" (legacy/dashboard)
     const isStructured = mode === "structured" && categories?.length > 0;
+
+    // Diverse theme pools for anti-repetition
+    const artThemes = [
+      "nostalgia", "chaos vs order", "hidden worlds", "transformation", "solitude",
+      "celebration", "decay and beauty", "movement and stillness", "forbidden places",
+      "childhood memories", "future ruins", "underwater kingdoms", "celestial bodies",
+      "urban wildlife", "forgotten machines", "emotional landscapes", "mythical encounters",
+      "seasons changing", "light through glass", "shadows and secrets", "growing things",
+      "storms and calm", "ancient and modern", "textures of time", "impossible gardens",
+      "dream architecture", "musical colors", "taste of places", "voices in silence",
+      "bridges between worlds", "floating islands", "crystalline structures", "bioluminescence",
+    ];
+    const artStyles = [
+      "watercolor", "ink wash", "charcoal", "gouache", "oil paint", "digital painting",
+      "pointillism", "cross-hatching", "flat color", "impasto", "collage", "mixed media",
+      "line art", "stippling", "monochrome", "palette knife", "spray paint", "pencil sketch",
+    ];
+    const artSubjects = [
+      "portraits", "landscapes", "still life", "animals", "architecture", "abstract forms",
+      "botanical", "figure studies", "cityscapes", "seascapes", "interiors", "food",
+      "hands and gestures", "eyes and faces", "fabric and drapery", "reflections",
+    ];
+
+    // Pick random elements for variety
+    const randTheme = artThemes[Math.floor(Math.random() * artThemes.length)];
+    const randStyle = artStyles[Math.floor(Math.random() * artStyles.length)];
+    const randSubject = artSubjects[Math.floor(Math.random() * artSubjects.length)];
+    const todayStr = new Date().toISOString().slice(0, 10);
 
     let systemPrompt: string;
     let userPrompt: string;
@@ -55,6 +83,8 @@ Rules:
 - Scale complexity with difficulty level.
 - Focus on skill-building fundamentals.
 - Keep each prompt to 1-2 sentences max.
+- Make prompts UNIQUE and VARIED — never generic or repetitive.
+- Today's inspiration theme: "${randTheme}" — weave this into the prompts naturally.
 
 Return ONLY a JSON object with this exact structure:
 {
@@ -67,13 +97,24 @@ Return ONLY a JSON object with this exact structure:
 No other text.`;
 
       userPrompt = `Generate art practice prompts for: ${categoryList}.
-Difficulty: ${difficultyLevel}.
-${categories.length > 1 ? "Pick one primary category and blend elements from the others." : ""}`;
+Difficulty: ${difficultyLevel}. Theme seed: "${randTheme}" + "${randSubject}".
+${categories.length > 1 ? "Pick one primary category and blend elements from the others." : ""}
+Make these prompts fresh and distinct — avoid generic exercises.`;
     } else {
-      // Legacy simple mode for dashboard card
-      const categoryHint = categories?.[0] ? ` Focus on the category: ${categories[0]}.` : "";
-      systemPrompt = "You are a creative muse for visual artists. Generate a single, evocative, imaginative creative prompt that inspires drawing, painting, or illustration. The prompt should be one sentence, poetic and open-ended. Return ONLY a JSON object with two fields: 'text' (the prompt) and 'category' (a short 1-2 word label like 'Abstract', 'Portrait', 'Character Design', 'Environment', 'Conceptual', 'Surreal', 'Symbolic', 'Creature Design'). No other text.";
-      userPrompt = `Generate a unique creative art prompt.${categoryHint}`;
+      // Dashboard simple mode with high variety
+      systemPrompt = `You are a creative muse for visual artists. Generate a single, evocative, imaginative creative prompt that inspires drawing, painting, or illustration. The prompt should be one sentence, poetic and open-ended.
+
+CRITICAL RULES FOR VARIETY:
+- Each prompt must be completely unique and surprising.
+- Avoid cliché art prompts like "draw your emotions" or "sketch a dream."
+- Blend unexpected concepts together.
+- Vary between abstract, narrative, technical, and experimental prompts.
+- Today's random seed theme: "${randTheme}" — use this as loose inspiration.
+- Suggested medium/style hint: "${randStyle}" — optionally reference this.
+- Subject area: "${randSubject}" — weave elements of this in.
+
+Return ONLY a JSON object with two fields: 'text' (the prompt) and 'category' (a short 1-2 word label like 'Abstract', 'Portrait', 'Character Design', 'Environment', 'Conceptual', 'Surreal', 'Symbolic', 'Creature Design'). No other text.`;
+      userPrompt = `Generate a unique creative art prompt. Date: ${todayStr}. Seed: ${seed || Math.random().toString(36).slice(2, 8)}. Theme: ${randTheme}. Be inventive and avoid repeating common prompts.`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
