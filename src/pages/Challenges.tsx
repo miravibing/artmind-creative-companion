@@ -119,6 +119,7 @@ export default function Challenges() {
       user_liked: userLikedSet.has(c.id),
       user_bookmarked: userBookmarkedSet.has(c.id),
       user_participating: userParticipatingSet.has(c.id),
+      creator_username: profileMap[c.user_id] || null,
     }));
 
     setChallenges(enriched);
