@@ -28,6 +28,7 @@ export interface Challenge {
   user_liked: boolean;
   user_bookmarked: boolean;
   user_participating: boolean;
+  creator_username: string | null;
 }
 
 const categories = ["All", "Drawing", "Painting", "Digital Art", "Sculpture", "Photography", "Mixed Media"];
