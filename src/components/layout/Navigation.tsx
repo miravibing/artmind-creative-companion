@@ -52,18 +52,7 @@ export function Navigation() {
 
           <div className="flex items-center gap-2">
             {user ? (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
-                    <User className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                  <span className="hidden lg:block max-w-[120px] truncate">{user.user_metadata?.display_name || user.email}</span>
-                </div>
-                <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-muted-foreground">
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </Button>
-              </div>
+              <ProfileMenu />
             ) : (
               <Link to="/auth">
                 <Button variant="gradient" size="sm" className="gap-2">
