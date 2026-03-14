@@ -50,6 +50,10 @@ export function ChallengeCard({ challenge, onUpdate }: { challenge: Challenge; o
 
           <p className="text-muted-foreground text-sm line-clamp-2">{challenge.description}</p>
 
+          {challenge.creator_username && (
+            <p className="text-xs text-muted-foreground">Creator: <span className="text-foreground font-medium">@{challenge.creator_username}</span></p>
+          )}
+
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="secondary" className="text-xs">{challenge.category}</Badge>
             {challenge.season && <Badge variant="outline" className="text-xs">{challenge.season}</Badge>}
