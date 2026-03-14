@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, CheckSquare, BookOpen, Smile, Sparkles, Trophy, LogOut, LogIn, User } from "lucide-react";
+import { Home, CheckSquare, BookOpen, Smile, Sparkles, Trophy, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { ProfileMenu } from "@/components/layout/ProfileMenu";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -16,7 +17,7 @@ const navItems = [
 
 export function Navigation() {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -51,18 +52,7 @@ export function Navigation() {
 
           <div className="flex items-center gap-2">
             {user ? (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
-                    <User className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                  <span className="hidden lg:block max-w-[120px] truncate">{user.user_metadata?.display_name || user.email}</span>
-                </div>
-                <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-muted-foreground">
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </Button>
-              </div>
+              <ProfileMenu />
             ) : (
               <Link to="/auth">
                 <Button variant="gradient" size="sm" className="gap-2">
@@ -95,13 +85,9 @@ export function Navigation() {
             );
           })}
           {user ? (
-            <button
-              onClick={signOut}
-              className="flex flex-col items-center gap-1 p-2 rounded-xl text-muted-foreground hover:text-foreground transition-all"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="text-xs font-medium">Sign Out</span>
-            </button>
+            <div className="flex flex-col items-center gap-1 p-2">
+              <ProfileMenu />
+            </div>
           ) : (
             <Link
               to="/auth"
