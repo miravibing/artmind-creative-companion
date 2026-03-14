@@ -85,13 +85,9 @@ export function Navigation() {
             );
           })}
           {user ? (
-            <button
-              onClick={signOut}
-              className="flex flex-col items-center gap-1 p-2 rounded-xl text-muted-foreground hover:text-foreground transition-all"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="text-xs font-medium">Sign Out</span>
-            </button>
+            <div className="flex flex-col items-center gap-1 p-2">
+              <ProfileMenu />
+            </div>
           ) : (
             <Link
               to="/auth"
