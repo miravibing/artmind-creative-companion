@@ -28,6 +28,7 @@ export interface Challenge {
   user_liked: boolean;
   user_bookmarked: boolean;
   user_participating: boolean;
+  creator_username: string | null;
 }
 
 const categories = ["All", "Drawing", "Painting", "Digital Art", "Sculpture", "Photography", "Mixed Media"];
@@ -81,6 +82,12 @@ export default function Challenges() {
 
     const challengeIds = rawChallenges.map((c) => c.id);
 
+    // Fetch creator usernames
+    const creatorIds = [...new Set(rawChallenges.map((c) => c.user_id))];
+    const { data: profilesData } = await supabase.from("profiles").select("id, username").in("id", creatorIds);
+    const profileMap: Record<string, string> = {};
+    (profilesData || []).forEach((p: any) => { profileMap[p.id] = p.username || "unknown"; });
+
     const [likesRes, participantsRes, commentsRes, userLikesRes, userBookmarksRes, userParticipatingRes] = await Promise.all([
       supabase.from("challenge_likes").select("challenge_id").in("challenge_id", challengeIds),
       supabase.from("challenge_participants").select("challenge_id").in("challenge_id", challengeIds),
@@ -112,6 +119,7 @@ export default function Challenges() {
       user_liked: userLikedSet.has(c.id),
       user_bookmarked: userBookmarkedSet.has(c.id),
       user_participating: userParticipatingSet.has(c.id),
+      creator_username: profileMap[c.user_id] || null,
     }));
 
     setChallenges(enriched);
