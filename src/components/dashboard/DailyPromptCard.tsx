@@ -3,6 +3,7 @@ import { RefreshCw, Lightbulb, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const fallbackPrompts = [
   "Create a character who embodies the feeling of a Sunday morning.",
@@ -16,13 +17,20 @@ const fallbackPrompts = [
 ];
 
 export function DailyPromptCard() {
+  const { user } = useAuth();
   const [currentPrompt, setCurrentPrompt] = useState(fallbackPrompts[0]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    generateAIPrompt();
-  }, []);
+    if (user) {
+      generateAIPrompt();
+    } else {
+      // Use a random fallback when not authenticated
+      const idx = Math.floor(Math.random() * fallbackPrompts.length);
+      setCurrentPrompt(fallbackPrompts[idx]);
+    }
+  }, [user]);
 
   const generateAIPrompt = async () => {
     setIsGenerating(true);
