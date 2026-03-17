@@ -67,6 +67,31 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
     }
     setLoading(true);
 
+    let coverImageUrl = challenge.cover_image_url;
+
+    // Handle cover image removal
+    if (removeCover && !coverFile) {
+      coverImageUrl = null;
+    }
+
+    // Handle new cover image upload
+    if (coverFile) {
+      const fileExt = coverFile.name.split(".").pop();
+      const filePath = `${challenge.user_id}/${challenge.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("challenge-covers")
+        .upload(filePath, coverFile, { upsert: true });
+
+      if (uploadError) {
+        toast({ title: "Failed to upload image", description: uploadError.message, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage.from("challenge-covers").getPublicUrl(filePath);
+      coverImageUrl = publicUrlData.publicUrl;
+    }
+
     const { error } = await supabase.from("challenges").update({
       title: title.trim(),
       description: description.trim(),
@@ -75,6 +100,7 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
       tags,
       deadline: deadline || null,
       season: season || null,
+      cover_image_url: coverImageUrl,
     }).eq("id", challenge.id);
 
     if (error) {
@@ -87,7 +113,23 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
     setLoading(false);
   };
 
-  return (
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Image must be under 2MB", variant: "destructive" });
+      return;
+    }
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+    setRemoveCover(false);
+  };
+
+  const handleRemoveCover = () => {
+    setCoverFile(null);
+    setCoverPreview(null);
+    setRemoveCover(true);
+  };
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
