@@ -4,7 +4,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Bookmark, Users, Send, Trash2, Calendar, Pencil } from "lucide-react";
+import { Heart, Bookmark, Users, Send, Trash2, Calendar, Pencil, Globe, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -115,8 +115,29 @@ export function ChallengeDetailDialog({ challenge, open, onOpenChange, onUpdate 
           </DialogHeader>
 
           <div className="space-y-4">
-            {challenge.creator_username && (
+            {challenge.is_external && (
+              <Badge className="bg-primary/90 text-primary-foreground text-xs gap-1">
+                <Globe className="w-3 h-3" />
+                Trending Online
+              </Badge>
+            )}
+
+            {challenge.is_external && challenge.publisher_name ? (
+              <p className="text-sm text-muted-foreground">By: <span className="text-foreground font-medium">{challenge.publisher_name}</span></p>
+            ) : challenge.creator_username ? (
               <p className="text-sm text-muted-foreground">Creator: <span className="text-foreground font-medium">@{challenge.creator_username}</span></p>
+            ) : null}
+
+            {challenge.is_external && challenge.source_url && (
+              <a
+                href={challenge.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                View original source
+              </a>
             )}
 
             <div className="flex flex-wrap gap-2">
