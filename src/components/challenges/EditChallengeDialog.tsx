@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { X } from "lucide-react";
+import { X, ImagePlus, Trash2 } from "lucide-react";
 import type { Challenge } from "@/pages/Challenges";
 
 const categoriesOptions = ["Drawing", "Painting", "Digital Art", "Sculpture", "Photography", "Mixed Media"];
