@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { X } from "lucide-react";
+import { X, ImagePlus, Trash2 } from "lucide-react";
 import type { Challenge } from "@/pages/Challenges";
 
 const categoriesOptions = ["Drawing", "Painting", "Digital Art", "Sculpture", "Photography", "Mixed Media"];
@@ -34,6 +34,9 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
   const [tagInput, setTagInput] = useState("");
   const [deadline, setDeadline] = useState("");
   const [season, setSeason] = useState("");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [removeCover, setRemoveCover] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -45,6 +48,9 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
       setDeadline(challenge.deadline ? challenge.deadline.split("T")[0] : "");
       setSeason(challenge.season || "");
       setTagInput("");
+      setCoverFile(null);
+      setCoverPreview(challenge.cover_image_url || null);
+      setRemoveCover(false);
     }
   }, [open, challenge]);
 
@@ -61,6 +67,31 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
     }
     setLoading(true);
 
+    let coverImageUrl = challenge.cover_image_url;
+
+    // Handle cover image removal
+    if (removeCover && !coverFile) {
+      coverImageUrl = null;
+    }
+
+    // Handle new cover image upload
+    if (coverFile) {
+      const fileExt = coverFile.name.split(".").pop();
+      const filePath = `${challenge.user_id}/${challenge.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("challenge-covers")
+        .upload(filePath, coverFile, { upsert: true });
+
+      if (uploadError) {
+        toast({ title: "Failed to upload image", description: uploadError.message, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage.from("challenge-covers").getPublicUrl(filePath);
+      coverImageUrl = publicUrlData.publicUrl;
+    }
+
     const { error } = await supabase.from("challenges").update({
       title: title.trim(),
       description: description.trim(),
@@ -69,6 +100,7 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
       tags,
       deadline: deadline || null,
       season: season || null,
+      cover_image_url: coverImageUrl,
     }).eq("id", challenge.id);
 
     if (error) {
@@ -81,6 +113,24 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
     setLoading(false);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Image must be under 2MB", variant: "destructive" });
+      return;
+    }
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+    setRemoveCover(false);
+  };
+
+  const handleRemoveCover = () => {
+    setCoverFile(null);
+    setCoverPreview(null);
+    setRemoveCover(true);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -90,6 +140,35 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Cover Image */}
+          <div className="space-y-2">
+            <Label>Cover Image</Label>
+            {coverPreview ? (
+              <div className="relative rounded-lg overflow-hidden h-36">
+                <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover" />
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <label className="cursor-pointer bg-background/80 backdrop-blur-sm rounded-md p-1.5 hover:bg-background transition-colors">
+                    <ImagePlus className="w-4 h-4 text-foreground" />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRemoveCover}
+                    className="bg-background/80 backdrop-blur-sm rounded-md p-1.5 hover:bg-destructive/20 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-secondary/30 transition-colors">
+                <ImagePlus className="w-6 h-6 text-muted-foreground mb-1" />
+                <span className="text-xs text-muted-foreground">Upload cover image (max 2MB)</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              </label>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="edit-title">Title *</Label>
             <Input id="edit-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} />
