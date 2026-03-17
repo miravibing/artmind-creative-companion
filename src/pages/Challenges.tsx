@@ -7,7 +7,7 @@ import { CreateChallengeDialog } from "@/components/challenges/CreateChallengeDi
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Flame, Leaf, Clock, Bookmark } from "lucide-react";
+import { Plus, Search, Flame, Leaf, Clock, Bookmark, Globe, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface Challenge {
@@ -29,6 +29,9 @@ export interface Challenge {
   user_bookmarked: boolean;
   user_participating: boolean;
   creator_username: string | null;
+  is_external: boolean;
+  source_url: string | null;
+  publisher_name: string | null;
 }
 
 const categories = ["All", "Drawing", "Painting", "Digital Art", "Sculpture", "Photography", "Mixed Media"];
@@ -36,6 +39,7 @@ const tabs = [
   { id: "trending", label: "Trending", icon: Flame },
   { id: "seasonal", label: "Seasonal", icon: Leaf },
   { id: "new", label: "New", icon: Clock },
+  { id: "external", label: "External", icon: Globe },
   { id: "bookmarked", label: "Bookmarked", icon: Bookmark },
 ] as const;
 
@@ -58,6 +62,7 @@ export default function Challenges() {
   const [activeTab, setActiveTab] = useState<TabId>("trending");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [createOpen, setCreateOpen] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const fetchChallenges = useCallback(async () => {
     if (!user) { setLoading(false); return; }
@@ -81,8 +86,6 @@ export default function Challenges() {
     }
 
     const challengeIds = rawChallenges.map((c) => c.id);
-
-    // Fetch creator usernames
     const creatorIds = [...new Set(rawChallenges.map((c) => c.user_id))];
     const { data: profilesData } = await supabase.from("profiles").select("id, username").in("id", creatorIds);
     const profileMap: Record<string, string> = {};
@@ -120,6 +123,9 @@ export default function Challenges() {
       user_bookmarked: userBookmarkedSet.has(c.id),
       user_participating: userParticipatingSet.has(c.id),
       creator_username: profileMap[c.user_id] || null,
+      is_external: (c as any).is_external ?? false,
+      source_url: (c as any).source_url ?? null,
+      publisher_name: (c as any).publisher_name ?? null,
     }));
 
     setChallenges(enriched);
@@ -128,6 +134,19 @@ export default function Challenges() {
 
   useEffect(() => { fetchChallenges(); }, [fetchChallenges]);
 
+  const seedExternalChallenges = async () => {
+    setSeeding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("seed-challenges");
+      if (error) throw error;
+      toast({ title: data?.message || "External challenges imported!" });
+      fetchChallenges();
+    } catch (e: any) {
+      toast({ title: "Failed to import challenges", description: e.message, variant: "destructive" });
+    }
+    setSeeding(false);
+  };
+
   const filtered = challenges.filter((c) => {
     const matchesSearch = !search || c.title.toLowerCase().includes(search.toLowerCase()) || c.description.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = selectedCategory === "All" || c.category === selectedCategory;
@@ -135,6 +154,7 @@ export default function Challenges() {
 
     if (activeTab === "seasonal") return c.season === getSeason();
     if (activeTab === "bookmarked") return c.user_bookmarked;
+    if (activeTab === "external") return c.is_external;
     return true;
   });
 
@@ -162,10 +182,21 @@ export default function Challenges() {
             </h1>
             <p className="text-muted-foreground">Discover, create, and participate in art challenges</p>
           </div>
-          <Button variant="gradient" className="gap-2 shrink-0" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4" />
-            Create Challenge
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={seedExternalChallenges}
+              disabled={seeding}
+            >
+              {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+              {seeding ? "Importing..." : "Import Trending"}
+            </Button>
+            <Button variant="gradient" className="gap-2" onClick={() => setCreateOpen(true)}>
+              <Plus className="w-4 h-4" />
+              Create Challenge
+            </Button>
+          </div>
         </div>
 
         {/* Search + Tabs */}
