@@ -130,6 +130,8 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
     setCoverPreview(null);
     setRemoveCover(true);
   };
+
+  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -138,6 +140,35 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Cover Image */}
+          <div className="space-y-2">
+            <Label>Cover Image</Label>
+            {coverPreview ? (
+              <div className="relative rounded-lg overflow-hidden h-36">
+                <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover" />
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <label className="cursor-pointer bg-background/80 backdrop-blur-sm rounded-md p-1.5 hover:bg-background transition-colors">
+                    <ImagePlus className="w-4 h-4 text-foreground" />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRemoveCover}
+                    className="bg-background/80 backdrop-blur-sm rounded-md p-1.5 hover:bg-destructive/20 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-secondary/30 transition-colors">
+                <ImagePlus className="w-6 h-6 text-muted-foreground mb-1" />
+                <span className="text-xs text-muted-foreground">Upload cover image (max 2MB)</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              </label>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="edit-title">Title *</Label>
             <Input id="edit-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} />
