@@ -34,6 +34,9 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
   const [tagInput, setTagInput] = useState("");
   const [deadline, setDeadline] = useState("");
   const [season, setSeason] = useState("");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [removeCover, setRemoveCover] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -45,6 +48,9 @@ export function EditChallengeDialog({ challenge, open, onOpenChange, onUpdated }
       setDeadline(challenge.deadline ? challenge.deadline.split("T")[0] : "");
       setSeason(challenge.season || "");
       setTagInput("");
+      setCoverFile(null);
+      setCoverPreview(challenge.cover_image_url || null);
+      setRemoveCover(false);
     }
   }, [open, challenge]);
 
