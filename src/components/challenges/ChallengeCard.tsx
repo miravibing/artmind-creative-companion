@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Heart, Bookmark, Users, MessageCircle, Calendar, Globe, ExternalLink } from "lucide-react";
+import { Heart, Bookmark, Users, MessageCircle, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,25 +36,11 @@ export function ChallengeCard({ challenge, onUpdate }: { challenge: Challenge; o
     <>
       <Card className="group overflow-hidden border-border/50 hover:shadow-card transition-all duration-300 cursor-pointer" onClick={() => setDetailOpen(true)}>
         {challenge.cover_image_url && (
-          <div className="h-40 overflow-hidden relative">
-            <img src={challenge.cover_image_url} alt={challenge.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-            {challenge.is_external && (
-              <Badge className="absolute top-2 left-2 bg-primary/90 text-primary-foreground text-[10px] gap-1 backdrop-blur-sm">
-                <Globe className="w-3 h-3" />
-                Trending Online
-              </Badge>
-            )}
+          <div className="h-40 overflow-hidden">
+            <img src={challenge.cover_image_url} alt={challenge.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           </div>
         )}
-        {!challenge.cover_image_url && challenge.is_external && (
-          <div className="px-5 pt-4">
-            <Badge className="bg-primary/90 text-primary-foreground text-[10px] gap-1">
-              <Globe className="w-3 h-3" />
-              Trending Online
-            </Badge>
-          </div>
-        )}
-        <CardContent className={cn("p-5 space-y-3", !challenge.cover_image_url && !challenge.is_external && "pt-5")}>
+        <CardContent className={cn("p-5 space-y-3", !challenge.cover_image_url && "pt-5")}>
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-display font-semibold text-foreground text-lg leading-tight line-clamp-2">{challenge.title}</h3>
             <Badge variant="outline" className={cn("shrink-0 text-xs", difficultyColor[challenge.difficulty] || "")}>
@@ -63,13 +50,9 @@ export function ChallengeCard({ challenge, onUpdate }: { challenge: Challenge; o
 
           <p className="text-muted-foreground text-sm line-clamp-2">{challenge.description}</p>
 
-          {challenge.is_external && challenge.publisher_name ? (
-            <p className="text-xs text-muted-foreground">
-              By: <span className="text-foreground font-medium">{challenge.publisher_name}</span>
-            </p>
-          ) : challenge.creator_username ? (
+          {challenge.creator_username && (
             <p className="text-xs text-muted-foreground">Creator: <span className="text-foreground font-medium">@{challenge.creator_username}</span></p>
-          ) : null}
+          )}
 
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="secondary" className="text-xs">{challenge.category}</Badge>
@@ -84,19 +67,6 @@ export function ChallengeCard({ challenge, onUpdate }: { challenge: Challenge; o
               <Calendar className="w-3.5 h-3.5" />
               <span>Due {format(new Date(challenge.deadline), "MMM d, yyyy")}</span>
             </div>
-          )}
-
-          {challenge.is_external && challenge.source_url && (
-            <a
-              href={challenge.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              <ExternalLink className="w-3 h-3" />
-              View source
-            </a>
           )}
 
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
