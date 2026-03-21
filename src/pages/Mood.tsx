@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { Heart, Calendar, TrendingUp, Save } from "lucide-react";
+import { Heart, Calendar, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { MoodActivityCalendar } from "@/components/mood/MoodActivityCalendar";
+import { MoodTrendChart } from "@/components/mood/MoodTrendChart";
 
 const moodOptions = [
   { value: 1, emoji: "😢", label: "Struggling", color: "bg-destructive/20 border-destructive/40" },
@@ -30,6 +32,7 @@ export default function Mood() {
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
+  const [allEntries, setAllEntries] = useState<MoodEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [todayEntry, setTodayEntry] = useState<MoodEntry | null>(null);
 
@@ -39,15 +42,31 @@ export default function Mood() {
 
   const fetchMoodHistory = async () => {
     setLoading(true);
+
+    // Fetch recent 10 for history list
     const { data, error } = await supabase
       .from("mood_entries")
       .select("*")
       .order("entry_date", { ascending: false })
       .limit(10);
 
-    if (error) { toast({ title: "Error loading moods", variant: "destructive" }); setLoading(false); return; }
+    // Fetch last 90 days for calendar/chart
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const { data: allData } = await supabase
+      .from("mood_entries")
+      .select("*")
+      .gte("entry_date", ninetyDaysAgo.toISOString().split("T")[0])
+      .order("entry_date", { ascending: false });
+
+    if (error) {
+      toast({ title: "Error loading moods", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
 
     setMoodHistory(data ?? []);
+    setAllEntries(allData ?? []);
     const existing = data?.find((e) => e.entry_date === today) ?? null;
     setTodayEntry(existing);
     if (existing) {
@@ -80,12 +99,19 @@ export default function Mood() {
   };
 
   const todayFormatted = new Date().toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric",
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
+
+  const formatFullDate = (dateStr: string) =>
+    new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
 
   return (
     <div className="min-h-screen gradient-hero pb-24 md:pb-8 md:pt-24">
-      <div className="container mx-auto px-4 py-6 md:py-8 max-w-2xl">
+      <div className="container mx-auto px-4 py-6 md:py-8 max-w-3xl">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center gap-3 mb-2">
@@ -107,7 +133,6 @@ export default function Mood() {
             )}
           </div>
 
-          {/* Mood Selection */}
           <div className="mb-6">
             <p className="text-sm text-muted-foreground mb-4">Select how you're feeling:</p>
             <div className="flex justify-between gap-2">
@@ -129,7 +154,6 @@ export default function Mood() {
             </div>
           </div>
 
-          {/* Notes */}
           <div className="mb-6">
             <label className="text-sm text-muted-foreground mb-2 block">Add a note (optional)</label>
             <textarea
@@ -156,12 +180,21 @@ export default function Mood() {
           </Button>
         </div>
 
+        {/* Mood Activity Calendar */}
+        <div className="mb-6 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+          <MoodActivityCalendar entries={allEntries} />
+        </div>
+
+        {/* Mood Trend Chart */}
+        <div className="mb-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+          <MoodTrendChart entries={allEntries} />
+        </div>
+
         {/* Mood History */}
-        <div className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="font-display text-xl font-semibold text-foreground">Recent History</h2>
-          </div>
+        <div className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
+          <h2 className="font-display text-xl font-semibold text-foreground mb-4">
+            Recent Reflections
+          </h2>
 
           {loading ? (
             <div className="space-y-3">
@@ -181,7 +214,7 @@ export default function Mood() {
                   <div
                     key={entry.id}
                     className="bg-card rounded-xl border border-border/50 shadow-soft p-4 flex items-center gap-4 animate-slide-up"
-                    style={{ animationDelay: `${(index + 2) * 0.1}s` }}
+                    style={{ animationDelay: `${(index + 4) * 0.1}s` }}
                   >
                     <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-2xl", moodData?.color)}>
                       {moodData?.emoji}
@@ -189,9 +222,7 @@ export default function Mood() {
                     <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">{entry.note || "No note added"}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(entry.entry_date + "T12:00:00").toLocaleDateString("en-US", {
-                          weekday: "short", month: "short", day: "numeric",
-                        })}
+                        {formatFullDate(entry.entry_date)}
                       </p>
                     </div>
                   </div>
