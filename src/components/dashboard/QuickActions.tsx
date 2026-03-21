@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Plus, Sparkles, BookOpen, Smile } from "lucide-react";
+import { Plus, Sparkles, BookOpen, Smile, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const actions = [
