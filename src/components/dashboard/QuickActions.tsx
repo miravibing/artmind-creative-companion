@@ -27,6 +27,12 @@ const actions = [
     href: "/mood",
     color: "bg-warning/10 text-warning hover:bg-warning/20",
   },
+  {
+    label: "Challenges",
+    icon: Trophy,
+    href: "/challenges",
+    color: "bg-destructive/10 text-destructive hover:bg-destructive/20",
+  },
 ];
 
 export function QuickActions() {
