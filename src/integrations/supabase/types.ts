@@ -142,7 +142,10 @@ export type Database = {
           description: string
           difficulty: string
           id: string
+          is_external: boolean
+          publisher_name: string | null
           season: string | null
+          source_url: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -156,7 +159,10 @@ export type Database = {
           description: string
           difficulty?: string
           id?: string
+          is_external?: boolean
+          publisher_name?: string | null
           season?: string | null
+          source_url?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -170,7 +176,10 @@ export type Database = {
           description?: string
           difficulty?: string
           id?: string
+          is_external?: boolean
+          publisher_name?: string | null
           season?: string | null
+          source_url?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
