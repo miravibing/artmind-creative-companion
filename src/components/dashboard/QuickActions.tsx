@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Plus, Sparkles, BookOpen, Smile } from "lucide-react";
+import { Plus, Sparkles, BookOpen, Smile, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const actions = [
@@ -27,11 +27,17 @@ const actions = [
     href: "/mood",
     color: "bg-warning/10 text-warning hover:bg-warning/20",
   },
+  {
+    label: "Challenges",
+    icon: Trophy,
+    href: "/challenges",
+    color: "bg-destructive/10 text-destructive hover:bg-destructive/20",
+  },
 ];
 
 export function QuickActions() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
       {actions.map((action) => (
         <Link
           key={action.label}
