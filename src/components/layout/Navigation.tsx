@@ -27,9 +27,7 @@ export function Navigation() {
       <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src={logo} alt="ArtMind" className="w-10 h-10 rounded-xl shadow-glow object-contain" />
             <span className="font-display text-xl font-semibold text-foreground">ArtMind</span>
           </Link>
 
