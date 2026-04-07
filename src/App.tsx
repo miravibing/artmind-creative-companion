@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navigation } from "@/components/layout/Navigation";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import Dashboard from "./pages/Dashboard";
 import Habits from "./pages/Habits";
 import Resources from "./pages/Resources";
@@ -21,6 +23,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OfflineBanner />
+      <InstallPrompt />
       <BrowserRouter>
         <AuthProvider>
           <Navigation />
