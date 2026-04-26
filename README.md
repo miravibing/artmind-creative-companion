@@ -146,11 +146,9 @@ npm install
 cp .env.example .env
 ```
 
-Add your Supabase credentials to `.env`:
-
 ```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=https://gljgcvohykazwhqpdupt.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdsamdjdm9oeWthendocXBkdXB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDEwMDksImV4cCI6MjA4NzE3NzAwOX0.4NLDzs9iCpTmD6fsijolFKuMGOsA7lVow0KAQSlquFk
 ```
 
 ```sh
@@ -166,7 +164,7 @@ The app will be available at `http://localhost:5173`
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_SUPABASE_URL` | Your Supabase project URL |
+| `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/public key (safe for client) |
 
 > **Note:** The AI API key for prompt generation is stored as a server-side secret in the Supabase Edge Function environment and is never exposed to the browser or committed to this repository.
