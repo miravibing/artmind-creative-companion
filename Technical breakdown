@@ -1,0 +1,940 @@
+# ArtMind — Full Technical Breakdown
+
+> Comprehensive technical documentation for the ArtMind Creative Assistant platform.
+
+---
+
+## Table of Contents
+
+1. [Application Overview](#1-application-overview)
+2. [Frontend Architecture](#2-frontend-architecture)
+3. [Backend Architecture](#3-backend-architecture)
+4. [Database Design (ERD)](#4-database-design-erd)
+5. [Data Flow](#5-data-flow)
+6. [AI System (Prompt Generation)](#6-ai-system-prompt-generation)
+7. [Authentication & Security](#7-authentication--security)
+8. [Infrastructure & Deployment](#8-infrastructure--deployment)
+9. [System Workflow (End-to-End)](#9-system-workflow-end-to-end)
+10. [Visual Diagrams](#10-visual-diagrams)
+
+---
+
+## 1. Application Overview
+
+### Purpose
+
+ArtMind is a Progressive Web Application (PWA) that helps artists maintain consistent creative practice. It addresses documented challenges artists face: art block, burnout, and difficulty maintaining routines. Unlike tools that handle art education *or* wellbeing in isolation, ArtMind integrates both into a single platform.
+
+### Target Users
+
+- Art students enrolled in formal programmes
+- Self-taught digital artists building independent portfolios
+- Creative hobbyists seeking structured routine scaffolding
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Dashboard** | Personalised greeting, daily AI-generated prompt, login streak tracker, mood summary, quick-action navigation |
+| **AI Inspiration Generator** | On-demand creative prompts powered by Google Gemini via Lovable AI Gateway. Supports simple (dashboard) and structured (category + difficulty) modes with warm-up, study, and challenge tiers |
+| **Challenges System** | Community art challenges with creation, likes, bookmarks, comments, participation tracking, cover images, tagging, and seasonal filtering |
+| **Learning Resources** | Curated, searchable library of external art learning content (videos, articles, courses) with category and type filters |
+| **Habit Tracker** | Custom habit creation, daily completion logging, automatic streak calculation with backwards counting, edit/delete flows |
+| **Mood Tracking** | Daily mood check-ins on a 1–5 scale with optional text notes, activity calendar heatmap, trend line chart, and weekly averages |
+| **Profile System** | Display name editing, avatar upload to cloud storage, per-user settings, and authenticated session management |
+
+### Academic Context
+
+Developed as a BSc (Hons) Business Information Systems final-year capstone project at Westminster International University in Tashkent (WIUT). Aligned with SDGs 3 (Health & Well-being), 8 (Decent Work), 9 (Innovation), and 17 (Partnerships).
+
+---
+
+## 2. Frontend Architecture
+
+### Technology Stack
+
+| Technology | Version | Role |
+|-----------|---------|------|
+| **React** | 18.3.x | Component-based UI library |
+| **TypeScript** | 5.8.x | Static type safety across the codebase |
+| **Vite** | 5.4.x | Development server and production bundler |
+| **Tailwind CSS** | 3.4.x | Utility-first styling framework |
+| **shadcn/ui** | — | Accessible component library built on Radix UI primitives |
+| **React Router** | 6.30.x | Client-side routing with nested routes |
+| **React Query** | 5.83.x | Server-state caching, refetching, and synchronisation |
+| **Recharts** | 2.15.x | SVG-based data visualisation (mood trend charts) |
+| **Lucide React** | 0.462.x | Icon library with tree-shaking |
+| **Framer Motion** | — | CSS-based animations via Tailwind `animate-*` utilities |
+| **date-fns** | 3.6.x | Date formatting and manipulation |
+| **Zod** | 3.25.x | Schema validation (forms via react-hook-form resolvers) |
+
+### Design System
+
+The application uses a custom **ArtMind Creative Palette** defined in `src/index.css` with HSL-based CSS custom properties:
+
+```
+Primary:    Deep Indigo  — hsl(262, 83%, 58%)
+Secondary:  Soft Lavender — hsl(270, 50%, 95%)
+Accent:     Coral        — hsl(12, 90%, 65%)
+Success:    Sage Green   — hsl(158, 60%, 52%)
+Warning:    Warm Amber   — hsl(38, 92%, 60%)
+```
+
+Typography pairing:
+- **Display font**: Playfair Display (serif, for headings)
+- **Body font**: Plus Jakarta Sans (sans-serif, for UI text)
+
+Custom gradients (`--gradient-primary`, `--gradient-hero`, etc.), shadows (`--shadow-glow`), and dark mode tokens are defined at the `:root` and `.dark` levels. All components use semantic tokens (`bg-primary`, `text-foreground`) — never raw colour values.
+
+### Component Hierarchy
+
+```
+App.tsx
+├── QueryClientProvider (React Query)
+│   └── TooltipProvider (Radix)
+│       ├── Toaster (shadcn toast)
+│       ├── Sonner (sonner toast)
+│       └── BrowserRouter
+│           └── AuthProvider (context)
+│               ├── Navigation
+│               │   ├── Desktop: top bar with logo, nav links, ProfileMenu
+│               │   └── Mobile: bottom tab bar with icons
+│               └── Routes
+│                   ├── / → Dashboard
+│                   │   ├── QuickActions
+│                   │   ├── DailyPromptCard
+│                   │   ├── LoginStreakCard
+│                   │   └── MoodOverviewCard
+│                   ├── /habits → Habits
+│                   ├── /resources → Resources
+│                   ├── /mood → Mood
+│                   │   ├── MoodActivityCalendar
+│                   │   └── MoodTrendChart
+│                   ├── /prompt → Prompt
+│                   │   ├── PromptCategorySelector
+│                   │   ├── PromptDifficultySelector
+│                   │   ├── StructuredPromptDisplay
+│                   │   └── PromptFavorites
+│                   ├── /challenges → Challenges
+│                   │   ├── ChallengeCard
+│                   │   ├── ChallengeDetailDialog
+│                   │   ├── CreateChallengeDialog
+│                   │   └── EditChallengeDialog
+│                   ├── /auth → Auth
+│                   └── /* → NotFound
+```
+
+### Routing System
+
+React Router v6 with flat route configuration in `App.tsx`. No nested layouts or lazy loading — all pages are eagerly imported. The `Navigation` component renders on every route (including `/auth`), providing consistent chrome.
+
+| Route | Component | Auth Required |
+|-------|-----------|---------------|
+| `/` | Dashboard | No (degrades gracefully) |
+| `/habits` | Habits | Yes (shows auth prompt) |
+| `/resources` | Resources | No (static content) |
+| `/mood` | Mood | Yes |
+| `/prompt` | Prompt | Yes (for AI generation) |
+| `/challenges` | Challenges | Yes |
+| `/auth` | Auth | No (redirects if authenticated) |
+
+### State Management
+
+The application uses a **three-layer state model**:
+
+1. **Global Auth State** — `AuthContext` (React Context) provides `user`, `session`, `loading`, and `signOut()` to the entire tree. Subscribes to `supabase.auth.onAuthStateChange` and initialises with `getSession()`.
+
+2. **Server State** — React Query (`@tanstack/react-query`) with a single `QueryClient`. Used implicitly — most pages use `useEffect` + local state for Supabase queries rather than `useQuery` hooks. The `QueryClient` is available but underutilised.
+
+3. **Local Component State** — `useState` hooks for form fields, UI toggles (dialogs, animations), and fetched data arrays. No global store (Redux, Zustand) is used.
+
+### Event Handling Patterns
+
+- **Forms**: Controlled inputs with `useState`, submit handlers call Supabase client directly. `Auth.tsx` uses `onSubmit` with `e.preventDefault()`. Challenge creation uses inline validation.
+- **Toggle actions** (likes, bookmarks, participation): Shared `toggle()` helper pattern that checks current state, then inserts or deletes a row.
+- **Mood selection**: Button click sets `selectedMood` state, then `saveMood()` performs upsert.
+- **Habit completion**: `toggleHabit()` inserts/deletes today's completion and recalculates streak.
+- **Animations**: CSS class toggling (`isAnimating`) with `setTimeout` for prompt transitions.
+
+---
+
+## 3. Backend Architecture
+
+### Services Used
+
+| Service | Purpose |
+|---------|---------|
+| **Lovable Cloud (Supabase)** PostgreSQL | Relational database for all application data |
+| **Lovable Cloud Auth** | Email/password authentication with JWT sessions |
+| **Lovable Cloud Storage** | File storage for avatars and challenge cover images |
+| **Edge Functions (Deno)** | Serverless backend logic for AI prompt generation |
+| **Lovable AI Gateway** | Proxy to Google Gemini for AI prompt generation |
+
+### How Requests Are Handled
+
+All client-to-backend communication uses the **Supabase JavaScript SDK** (`@supabase/supabase-js`). The SDK automatically:
+1. Attaches the JWT from `localStorage` to every request as an `Authorization: Bearer <token>` header
+2. Routes queries through PostgREST (auto-generated REST API over PostgreSQL)
+3. Enforces Row Level Security (RLS) policies at the database level
+
+There is **no custom REST API layer** — the PostgREST auto-generated API serves all CRUD operations.
+
+### API Structure
+
+#### PostgREST Queries (via Supabase SDK)
+
+```
+supabase.from("table_name").select(columns).eq(filter).order(...)
+supabase.from("table_name").insert({ ... })
+supabase.from("table_name").update({ ... }).eq(filter)
+supabase.from("table_name").delete().eq(filter)
+```
+
+#### RPC (Remote Procedure Calls)
+
+```
+supabase.rpc("update_login_streak", { p_user_id: user.id })
+```
+
+#### Edge Function Invocations
+
+```
+supabase.functions.invoke("generate-prompt", { body: { ... } })
+```
+
+#### Storage Operations
+
+```
+supabase.storage.from("bucket").upload(path, file)
+supabase.storage.from("bucket").getPublicUrl(path)
+supabase.storage.from("bucket").remove([path])
+```
+
+### Business Logic Per Feature
+
+#### Dashboard
+- Calls `useLoginStreak()` hook which invokes `update_login_streak` RPC on mount
+- `DailyPromptCard` invokes `generate-prompt` edge function in "simple" mode
+- `MoodOverviewCard` queries last 7 `mood_entries` and allows quick mood log
+
+#### Habits
+- Loads `habits` + today's `habit_completions` via two parallel queries
+- `toggleHabit()`: inserts completion → increments streak (if yesterday was completed) or sets to 1; deletes completion → recalculates streak backwards via `countStreakBackwards()`
+- Streak recalculation queries completions ordered by date descending and counts consecutive days
+
+#### Mood
+- Queries recent 10 entries (history list) and last 90 days (calendar + chart)
+- Save: if today's entry exists → `update`; otherwise → `insert`
+- Calendar component computes ~13 weeks of date cells aligned to Sunday boundaries
+- Trend chart uses Recharts `LineChart` with domain `[1, 5]`
+
+#### Challenges
+- Fetches all challenges, then enriches each with counts (likes, participants, comments) and user-specific flags via `Promise.all` over three separate queries per challenge
+- Creator username resolved by querying `profiles` table
+- Filtered client-side by search text, category, and tab (trending/new/seasonal/bookmarked)
+- Sorted by: `likes_count + participants_count` (trending) or `created_at` (new)
+
+#### Prompt Generator
+- Structured mode: sends `categories[]`, `difficulty`, `mode: "structured"` to edge function
+- Returns `{ category, difficulty, warmup, study, challenge }`
+- Favourites: insert/delete on `prompt_favorites` table with `prompt_text` and `category`
+
+#### Profile
+- Loads `profiles` row on auth state change
+- Display name: `update` on `profiles.display_name`
+- Avatar: upload to `avatars` bucket → get public URL → `update` on `profiles.avatar_url`
+- 2MB file size limit enforced client-side
+
+### CRUD Summary
+
+| Entity | Create | Read | Update | Delete |
+|--------|--------|------|--------|--------|
+| profiles | Trigger (on signup) | ✅ | ✅ | ❌ |
+| habits | ✅ | ✅ (own) | ✅ (own) | ✅ (own) |
+| habit_completions | ✅ | ✅ (own) | ❌ | ✅ (own) |
+| mood_entries | ✅ | ✅ (own) | ✅ (own) | ✅ (own) |
+| prompt_favorites | ✅ | ✅ (own) | ❌ | ✅ (own) |
+| user_streaks | ✅ (RPC) | ✅ (own) | ✅ (RPC) | ❌ |
+| challenges | ✅ | ✅ (all) | ✅ (own) | ✅ (own) |
+| challenge_likes | ✅ | ✅ (all) | ❌ | ✅ (own) |
+| challenge_bookmarks | ✅ | ✅ (own) | ❌ | ✅ (own) |
+| challenge_participants | ✅ | ✅ (all) | ❌ | ✅ (own) |
+| challenge_comments | ✅ | ✅ (all) | ❌ | ✅ (own) |
+
+---
+
+## 4. Database Design (ERD)
+
+### Entity Descriptions
+
+#### `profiles`
+Stores public user profile information. Created automatically on signup via `handle_new_user()` trigger.
+
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| id | uuid | No | — | References `auth.users(id)` |
+| username | text | Yes | — | Auto-set from email prefix |
+| display_name | text | Yes | — | User-editable |
+| avatar_url | text | Yes | — | Public URL from storage |
+| created_at | timestamptz | No | `now()` | |
+| updated_at | timestamptz | No | `now()` | Auto-updated via trigger |
+
+#### `habits`
+User-defined creative habits with streak tracking.
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | No | `gen_random_uuid()` |
+| user_id | uuid | No | — |
+| name | text | No | — |
+| icon | text | No | `'🎨'` |
+| streak | integer | No | `0` |
+| last_completed_date | date | Yes | — |
+| created_at | timestamptz | No | `now()` |
+| updated_at | timestamptz | No | `now()` |
+
+#### `habit_completions`
+Daily completion records for habits.
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | No | `gen_random_uuid()` |
+| user_id | uuid | No | — |
+| habit_id | uuid | No | — |
+| completed_date | date | No | `CURRENT_DATE` |
+| created_at | timestamptz | No | `now()` |
+
+#### `mood_entries`
+Daily mood check-ins.
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | No | `gen_random_uuid()` |
+| user_id | uuid | No | — |
+| mood | integer | No | — |
+| note | text | Yes | — |
+| entry_date | date | No | `CURRENT_DATE` |
+| created_at | timestamptz | No | `now()` |
+
+#### `prompt_favorites`
+Saved AI-generated prompts.
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | No | `gen_random_uuid()` |
+| user_id | uuid | No | — |
+| prompt_text | text | No | — |
+| category | text | Yes | — |
+| created_at | timestamptz | No | `now()` |
+
+#### `user_streaks`
+Login streak tracking per user.
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | No | `gen_random_uuid()` |
+| user_id | uuid | No | — |
+| current_streak | integer | No | `0` |
+| longest_streak | integer | No | `0` |
+| last_login_date | date | Yes | — |
+| created_at | timestamptz | No | `now()` |
+| updated_at | timestamptz | No | `now()` |
+
+#### `challenges`
+Community art challenges.
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | No | `gen_random_uuid()` |
+| user_id | uuid | No | — |
+| title | text | No | — |
+| description | text | No | — |
+| category | text | No | `'General'` |
+| difficulty | text | No | `'Beginner'` |
+| tags | text[] | Yes | `'{}'` |
+| deadline | timestamptz | Yes | — |
+| cover_image_url | text | Yes | — |
+| season | text | Yes | — |
+| source_url | text | Yes | — |
+| is_external | boolean | No | `false` |
+| publisher_name | text | Yes | — |
+| created_at | timestamptz | No | `now()` |
+| updated_at | timestamptz | No | `now()` |
+
+#### `challenge_likes` / `challenge_bookmarks` / `challenge_participants`
+Junction tables linking users to challenges. All share the same schema:
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | No | `gen_random_uuid()` |
+| user_id | uuid | No | — |
+| challenge_id | uuid | No | — |
+| created_at | timestamptz | No | `now()` |
+
+#### `challenge_comments`
+Comments on challenges.
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | No | `gen_random_uuid()` |
+| user_id | uuid | No | — |
+| challenge_id | uuid | No | — |
+| content | text | No | — |
+| created_at | timestamptz | No | `now()` |
+
+### Relationships
+
+```
+auth.users (1) ──────── (1) profiles
+    │
+    ├── (1) ──── (N) habits
+    │                  │
+    │                  └── (1) ──── (N) habit_completions
+    │
+    ├── (1) ──── (N) mood_entries
+    │
+    ├── (1) ──── (N) prompt_favorites
+    │
+    ├── (1) ──── (1) user_streaks
+    │
+    ├── (1) ──── (N) challenges
+    │                  │
+    │                  ├── (1) ──── (N) challenge_likes
+    │                  ├── (1) ──── (N) challenge_bookmarks
+    │                  ├── (1) ──── (N) challenge_participants
+    │                  └── (1) ──── (N) challenge_comments
+    │
+    ├── (1) ──── (N) challenge_likes        (user side)
+    ├── (1) ──── (N) challenge_bookmarks    (user side)
+    ├── (1) ──── (N) challenge_participants (user side)
+    └── (1) ──── (N) challenge_comments     (user side)
+```
+
+### Text-Based ERD Diagram
+
+```
+┌──────────────────┐         ┌──────────────────┐
+│   auth.users     │         │    profiles       │
+│──────────────────│         │──────────────────│
+│ id (PK, uuid)    │────1:1──│ id (PK, uuid)    │
+│ email            │         │ username          │
+│ raw_user_meta    │         │ display_name      │
+│ ...              │         │ avatar_url        │
+└───────┬──────────┘         │ created_at        │
+        │                    │ updated_at        │
+        │                    └──────────────────┘
+        │
+        │ 1:N
+        ├────────────────────────┐
+        │                        │
+┌───────▼──────────┐    ┌───────▼──────────┐
+│     habits       │    │  mood_entries     │
+│──────────────────│    │──────────────────│
+│ id (PK)          │    │ id (PK)          │
+│ user_id (FK)     │    │ user_id (FK)     │
+│ name             │    │ mood (1-5)       │
+│ icon             │    │ note             │
+│ streak           │    │ entry_date       │
+│ last_completed   │    │ created_at       │
+│ created_at       │    └──────────────────┘
+│ updated_at       │
+└───────┬──────────┘    ┌──────────────────┐
+        │ 1:N           │ prompt_favorites  │
+        │               │──────────────────│
+┌───────▼──────────┐    │ id (PK)          │
+│habit_completions │    │ user_id (FK)     │
+│──────────────────│    │ prompt_text      │
+│ id (PK)          │    │ category         │
+│ user_id (FK)     │    │ created_at       │
+│ habit_id (FK)    │    └──────────────────┘
+│ completed_date   │
+│ created_at       │    ┌──────────────────┐
+└──────────────────┘    │  user_streaks    │
+                        │──────────────────│
+                        │ id (PK)          │
+                        │ user_id (FK)     │
+                        │ current_streak   │
+                        │ longest_streak   │
+                        │ last_login_date  │
+                        │ created_at       │
+                        │ updated_at       │
+                        └──────────────────┘
+
+┌──────────────────┐
+│   challenges     │
+│──────────────────│
+│ id (PK)          │
+│ user_id (FK)     │◄───── creator
+│ title            │
+│ description      │
+│ category         │
+│ difficulty       │
+│ tags[]           │
+│ deadline         │
+│ cover_image_url  │
+│ season           │
+│ is_external      │
+│ publisher_name   │
+│ source_url       │
+│ created_at       │
+│ updated_at       │
+└───────┬──────────┘
+        │ 1:N (four junction tables)
+        │
+        ├──────────────────────┐──────────────────────┐──────────────────────┐
+        │                      │                      │                      │
+┌───────▼──────────┐  ┌───────▼──────────┐  ┌───────▼──────────┐  ┌───────▼──────────┐
+│ challenge_likes  │  │challenge_bookmarks│  │challenge_particip│  │challenge_comments│
+│──────────────────│  │──────────────────│  │──────────────────│  │──────────────────│
+│ id (PK)          │  │ id (PK)          │  │ id (PK)          │  │ id (PK)          │
+│ user_id (FK)     │  │ user_id (FK)     │  │ user_id (FK)     │  │ user_id (FK)     │
+│ challenge_id(FK) │  │ challenge_id(FK) │  │ challenge_id(FK) │  │ challenge_id(FK) │
+│ created_at       │  │ created_at       │  │ created_at       │  │ content          │
+└──────────────────┘  └──────────────────┘  └──────────────────┘  │ created_at       │
+                                                                   └──────────────────┘
+```
+
+---
+
+## 5. Data Flow
+
+### 5.1 Mood Tracking Flow
+
+```
+Step 1: User opens /mood page
+Step 2: Component mounts → useEffect fires
+Step 3: supabase.from("mood_entries").select("*")
+            .eq("user_id", auth.uid())
+            .order("entry_date", { ascending: false })
+            .limit(10)
+Step 4: PostgreSQL executes query with RLS filter (user_id = auth.uid())
+Step 5: PostgREST returns JSON array → component sets moodHistory state
+Step 6: Parallel query fetches last 90 days for calendar/chart
+Step 7: User taps mood emoji (e.g., 😊 = 4)
+Step 8: selectedMood state updates → note textarea appears
+Step 9: User taps "Save"
+Step 10: If todayEntry exists:
+            supabase.from("mood_entries").update({ mood, note }).eq("id", todayEntry.id)
+         Else:
+            supabase.from("mood_entries").insert({ user_id, mood, note, entry_date: today })
+Step 11: PostgreSQL validates RLS → inserts/updates row
+Step 12: Success toast shown → fetchMoodHistory() re-fetches → UI updates
+```
+
+### 5.2 Challenge Creation Flow
+
+```
+Step 1: User clicks "Create Challenge" on /challenges
+Step 2: CreateChallengeDialog opens → form rendered
+Step 3: User fills title, description, category, difficulty, tags, optional cover image
+Step 4: User clicks "Publish"
+Step 5: If coverFile exists:
+            supabase.storage.from("challenge-covers")
+                .upload(`${user.id}/${timestamp}-${filename}`, file)
+            → getPublicUrl() → cover_image_url
+Step 6: supabase.from("challenges").insert({
+            user_id, title, description, category, difficulty,
+            tags, deadline, cover_image_url, season
+         })
+Step 7: PostgreSQL validates RLS (auth.uid() = user_id) → inserts row
+Step 8: Dialog closes → onCreated() callback → fetchChallenges() re-runs
+Step 9: New challenge appears in the grid with 0 likes/participants
+```
+
+### 5.3 AI Prompt Generation Flow
+
+```
+Step 1: User selects categories + difficulty on /prompt
+Step 2: User clicks "Generate"
+Step 3: supabase.functions.invoke("generate-prompt", {
+            body: { categories, difficulty, mode: "structured" }
+         })
+Step 4: Edge function receives request with JWT in Authorization header
+Step 5: JWT validated via supabase.auth.getClaims(token)
+Step 6: Random theme/style/subject selected from curated pools
+Step 7: System + user prompts constructed with anti-repetition rules
+Step 8: POST to https://ai.gateway.lovable.dev/v1/chat/completions
+            model: "google/gemini-3-flash-preview"
+Step 9: AI returns JSON: { category, difficulty, warmup, study, challenge }
+Step 10: Edge function parses response (with fallback on parse failure)
+Step 11: JSON returned to client → StructuredPromptDisplay renders three tiers
+Step 12: User can copy individual prompts or save to prompt_favorites
+```
+
+### 5.4 Login Streak Flow
+
+```
+Step 1: User logs in → AuthContext updates → Dashboard mounts
+Step 2: useLoginStreak() hook fires useEffect
+Step 3: supabase.rpc("update_login_streak", { p_user_id: user.id })
+Step 4: PostgreSQL function executes (SECURITY DEFINER):
+         a. Verifies p_user_id = auth.uid() (prevents spoofing)
+         b. Looks up existing user_streaks row
+         c. If NOT FOUND → inserts new row (streak: 1)
+         d. If last_login = today → returns current values (idempotent)
+         e. If last_login = yesterday → increments current_streak
+         f. If gap > 1 day → resets current_streak to 1
+         g. Updates longest_streak if current > longest
+         h. Updates row and returns {current_streak, longest_streak, last_login_date}
+Step 5: Hook updates state → LoginStreakCard renders fire/trophy icons
+```
+
+### 5.5 Habit Completion Flow
+
+```
+Step 1: User taps habit checkbox on /habits
+Step 2: toggleHabit(habitId) fires
+Step 3: If not completed today:
+            supabase.from("habit_completions").insert({
+                user_id, habit_id, completed_date: today
+            })
+         → Check if yesterday was completed (last_completed_date === yesterday)
+         → If yes: new_streak = current_streak + 1
+         → If no: new_streak = 1
+         → supabase.from("habits").update({
+                streak: new_streak,
+                last_completed_date: today
+           })
+Step 4: If already completed (un-toggle):
+            supabase.from("habit_completions").delete()
+                .eq("habit_id", id).eq("completed_date", today)
+         → countStreakBackwards(habitId, yesterday):
+              Queries completions descending from yesterday,
+              counts consecutive days
+         → supabase.from("habits").update({
+                streak: recalculated_streak,
+                last_completed_date: yesterday_or_null
+           })
+Step 5: fetchHabits() re-runs → UI updates
+```
+
+---
+
+## 6. AI System (Prompt Generation)
+
+### Architecture
+
+The AI system is implemented as a single Supabase Edge Function (`supabase/functions/generate-prompt/index.ts`) running on Deno. It serves as a secure proxy between the client and the Lovable AI Gateway.
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `categories` | string[] | No | Art categories (e.g., "Figure Drawing", "Color Theory") |
+| `difficulty` | string | No | "Beginner" / "Intermediate" / "Advanced" |
+| `mode` | string | No | "structured" (full practice) or omitted (simple dashboard prompt) |
+| `seed` | string | No | Random seed for dashboard prompt variety |
+
+### Two Operating Modes
+
+#### Simple Mode (Dashboard)
+- Returns: `{ text: string, category: string }`
+- One evocative, poetic prompt sentence
+- Uses random theme, style, and subject from curated pools
+- Category is a short label (e.g., "Surreal", "Portrait", "Creature Design")
+
+#### Structured Mode (Prompt Page)
+- Returns: `{ category, difficulty, warmup, study, challenge }`
+- Three-tier practice session:
+  - **Warm-up** (2–5 min): quick gesture exercise
+  - **Focused Study** (15–30 min): skill-building exercise
+  - **Creative Challenge** (30–60 min): applied creative task
+
+### Prompt Engineering
+
+Anti-repetition strategies:
+1. **Curated theme pools** (32 themes): nostalgia, chaos vs order, hidden worlds, transformation, etc.
+2. **Art style pool** (18 styles): watercolor, ink wash, pointillism, collage, etc.
+3. **Subject pool** (16 subjects): portraits, landscapes, botanical, cityscapes, etc.
+4. **Random selection** per request: one theme + one style + one subject
+5. **Date + random seed** included in user prompt to prevent caching
+6. **Explicit system rules**: "Each prompt must be completely unique", "Avoid cliché art prompts"
+
+### Error Handling
+
+- **429 (Rate Limited)**: Returns user-friendly rate limit message
+- **402 (Credits Exhausted)**: Returns credits-required message
+- **JSON Parse Failure**: Falls back to hardcoded default prompts
+- **Network Error**: Returns 500 with error details
+
+### Model
+
+Uses `google/gemini-3-flash-preview` via the Lovable AI Gateway at `https://ai.gateway.lovable.dev/v1/chat/completions`. The `LOVABLE_API_KEY` secret is auto-provisioned and read from `Deno.env`.
+
+---
+
+## 7. Authentication & Security
+
+### Authentication Flow
+
+```
+Signup:
+1. User enters email + password + display name on /auth
+2. supabase.auth.signUp({ email, password, options: {
+       data: { display_name },
+       emailRedirectTo: window.location.origin
+   }})
+3. Supabase creates auth.users row → fires handle_new_user() trigger
+4. Trigger inserts profiles row with username = email prefix
+5. User must verify email before signing in (auto-confirm DISABLED)
+6. Toast: "Check your email for verification link"
+
+Login:
+1. User enters email + password
+2. supabase.auth.signInWithPassword({ email, password })
+3. Supabase returns JWT + refresh token
+4. SDK stores tokens in localStorage (persistSession: true)
+5. onAuthStateChange fires → AuthContext updates → UI re-renders
+6. Redirect to / (Dashboard)
+```
+
+### Session Management
+
+- JWTs stored in `localStorage` via Supabase SDK
+- `autoRefreshToken: true` — SDK automatically refreshes before expiry
+- `AuthContext` subscribes to `onAuthStateChange` for real-time session updates
+- On logout: `supabase.auth.signOut()` → clears localStorage → redirects to `/auth`
+- Auth page redirects authenticated users to `/` via `<Navigate to="/" replace />`
+
+### Data Protection — Row Level Security (RLS)
+
+**Every table** has RLS enabled with policies scoped to the `authenticated` role.
+
+Three protection patterns:
+
+1. **Owner-only** (`auth.uid() = user_id`):
+   - `habits`, `habit_completions`, `mood_entries`, `prompt_favorites`, `user_streaks`, `challenge_bookmarks`
+   - Users can only CRUD their own rows
+
+2. **Public-read, owner-write** (`true` for SELECT, `auth.uid() = user_id` for INSERT/UPDATE/DELETE):
+   - `challenges`, `profiles`, `challenge_likes`, `challenge_comments`, `challenge_participants`
+   - Anyone authenticated can view; only owners can modify
+
+3. **RPC-level authorization** (`update_login_streak`):
+   - `SECURITY DEFINER` function with explicit `p_user_id <> auth.uid()` check
+   - Raises exception on mismatch
+
+### Security Measures Summary
+
+| Layer | Mechanism |
+|-------|-----------|
+| Transport | HTTPS everywhere |
+| Authentication | Email/password with email verification |
+| Authorization | PostgreSQL RLS on every table |
+| API Keys | LOVABLE_API_KEY stored as server-side secret, never client-exposed |
+| Edge Function | JWT validated via `supabase.auth.getClaims()` |
+| File Upload | Client-side 2MB limit; storage bucket is public (read) but write requires auth |
+| Password Safety | Leaked password protection (HIBP check) enabled |
+
+---
+
+## 8. Infrastructure & Deployment
+
+### Hosting
+
+| Component | Platform |
+|-----------|----------|
+| Frontend | Vercel (via GitHub integration) |
+| Database | Lovable Cloud (managed PostgreSQL) |
+| Auth | Lovable Cloud (managed Supabase Auth) |
+| Storage | Lovable Cloud (managed Supabase Storage) |
+| Edge Functions | Lovable Cloud (managed Deno runtime) |
+| AI Gateway | Lovable AI Gateway (managed proxy to Google Gemini) |
+
+### CI/CD Workflow
+
+```
+Developer pushes to GitHub
+        │
+        ▼
+Vercel detects push (GitHub integration)
+        │
+        ▼
+Vercel runs: npm install → vite build → deploy
+        │
+        ▼
+Static assets served via Vercel CDN (global edge)
+        │
+        ▼
+Edge functions deployed automatically by Lovable Cloud
+```
+
+### Environment Variables
+
+| Variable | Location | Purpose |
+|----------|----------|---------|
+| `VITE_SUPABASE_URL` | `.env` (auto-managed) | Supabase project URL for SDK |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | `.env` (auto-managed) | Supabase anon key (safe for client) |
+| `VITE_SUPABASE_PROJECT_ID` | `.env` (auto-managed) | Project identifier |
+| `SUPABASE_URL` | Edge Function env | Internal Supabase URL |
+| `SUPABASE_ANON_KEY` | Edge Function env | Anon key for server-side client |
+| `SUPABASE_SERVICE_ROLE_KEY` | Edge Function env | Admin key (not used in current code) |
+| `LOVABLE_API_KEY` | Edge Function env | AI Gateway authentication |
+
+### Build Process
+
+1. **Development**: `npm run dev` → Vite dev server at `localhost:5173` with HMR
+2. **Production**: `vite build` → optimised static bundle in `dist/`
+3. **Type checking**: `tsc --noEmit` via TypeScript 5.8
+4. **Linting**: ESLint 9 with `react-hooks` and `react-refresh` plugins
+5. **Testing**: Vitest with jsdom environment and React Testing Library
+
+---
+
+## 9. System Workflow (End-to-End)
+
+### Full Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    DEVELOPMENT PHASE                     │
+│                                                         │
+│  1. Developer writes React/TypeScript code              │
+│  2. Database changes via SQL migrations                 │
+│  3. Edge function code written in Deno/TypeScript       │
+│  4. Local testing with Vite dev server                  │
+│  5. Code committed and pushed to GitHub                 │
+└───────────────────────┬─────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────┐
+│                    DEPLOYMENT PHASE                      │
+│                                                         │
+│  6. Vercel detects push → triggers build                │
+│  7. vite build produces optimised static assets         │
+│  8. Assets deployed to Vercel CDN (global edge)         │
+│  9. Edge functions auto-deployed by Lovable Cloud       │
+│ 10. Database migrations applied via Lovable Cloud       │
+└───────────────────────┬─────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────┐
+│                    RUNTIME PHASE                         │
+│                                                         │
+│ 11. User visits app → Vercel serves React SPA           │
+│ 12. React mounts → AuthContext checks session           │
+│ 13. If authenticated:                                   │
+│     a. JWT attached to all Supabase requests            │
+│     b. Dashboard loads: streak RPC + mood query + AI    │
+│     c. User interacts: habits, mood, prompts, etc.      │
+│ 14. All writes go through PostgREST with RLS            │
+│ 15. AI requests routed: Client → Edge Fn → AI Gateway   │
+│ 16. Files uploaded to Supabase Storage                  │
+│ 17. Data persisted in PostgreSQL                        │
+│ 18. Session auto-refreshes via SDK                      │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 10. Visual Diagrams
+
+### 10.1 Low-Fidelity Architecture
+
+```
+┌──────────┐      HTTPS       ┌──────────────┐
+│  User    │ ───────────────→ │  Vercel CDN  │
+│ (Browser)│ ←─────────────── │ (Static SPA) │
+└────┬─────┘                  └──────────────┘
+     │
+     │ Supabase JS SDK (JWT in headers)
+     │
+     ├── Auth ──────────→ Supabase Auth ──→ auth.users
+     │
+     ├── CRUD ──────────→ PostgREST ──────→ PostgreSQL (RLS)
+     │
+     ├── RPC ───────────→ update_login_streak()
+     │
+     ├── Storage ───────→ Supabase Storage (avatars, covers)
+     │
+     └── Edge Function ─→ generate-prompt
+                              │
+                              └──→ Lovable AI Gateway ──→ Google Gemini
+```
+
+### 10.2 High-Fidelity Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         CLIENT (Browser)                            │
+│                                                                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐           │
+│  │Dashboard │  │ Habits   │  │  Mood    │  │Challenges│  ...       │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘           │
+│       │              │              │              │                 │
+│  ┌────▼──────────────▼──────────────▼──────────────▼─────────────┐  │
+│  │              Supabase JS Client (with JWT)                    │  │
+│  │  ┌─────────┐  ┌────────┐  ┌─────────┐  ┌──────────────┐     │  │
+│  │  │  Auth   │  │  CRUD  │  │   RPC   │  │   Functions  │     │  │
+│  │  └────┬────┘  └───┬────┘  └────┬────┘  └──────┬───────┘     │  │
+│  └───────┼───────────┼───────────┼──────────────┼───────────────┘  │
+│          │           │           │              │                   │
+└──────────┼───────────┼───────────┼──────────────┼───────────────────┘
+           │           │           │              │
+    HTTPS  │    HTTPS  │    HTTPS  │       HTTPS  │
+           │           │           │              │
+┌──────────▼───────────▼───────────▼──────────────▼───────────────────┐
+│                     LOVABLE CLOUD (Supabase)                        │
+│                                                                     │
+│  ┌─────────────┐                                                    │
+│  │   GoTrue    │ ◄── Auth (signup, login, JWT issue/refresh)        │
+│  │ (Auth Svc)  │                                                    │
+│  └──────┬──────┘                                                    │
+│         │ JWT validation                                            │
+│         ▼                                                           │
+│  ┌─────────────┐      ┌──────────────────────────────────────────┐  │
+│  │  PostgREST  │ ───→ │              PostgreSQL                  │  │
+│  │  (REST API) │      │                                          │  │
+│  └─────────────┘      │  ┌────────────┐  ┌──────────────────┐   │  │
+│                        │  │   Tables   │  │    Functions     │   │  │
+│  ┌─────────────┐      │  │ (11 total) │  │ update_login_    │   │  │
+│  │   Storage   │      │  │  with RLS  │  │   streak()       │   │  │
+│  │  (S3-compat)│      │  └────────────┘  │ handle_new_user()│   │  │
+│  │  - avatars  │      │                  │ update_updated_  │   │  │
+│  │  - covers   │      │  ┌────────────┐  │   at_column()    │   │  │
+│  └─────────────┘      │  │ 36 RLS     │  └──────────────────┘   │  │
+│                        │  │ Policies   │                         │  │
+│  ┌─────────────┐      │  └────────────┘                         │  │
+│  │Edge Function│      └──────────────────────────────────────────┘  │
+│  │ generate-   │                                                    │
+│  │  prompt     │──── HTTPS ────→ ┌──────────────────────┐          │
+│  │ (Deno)      │                 │  Lovable AI Gateway  │          │
+│  └─────────────┘                 │  (ai.gateway.        │          │
+│                                  │   lovable.dev)       │          │
+│                                  └──────────┬───────────┘          │
+│                                             │                      │
+└─────────────────────────────────────────────┼──────────────────────┘
+                                              │
+                                              ▼
+                                  ┌──────────────────────┐
+                                  │   Google Gemini      │
+                                  │ (gemini-3-flash-     │
+                                  │       preview)       │
+                                  └──────────────────────┘
+```
+
+### 10.3 User-Specific Data Filtering (RLS)
+
+```
+                   SELECT * FROM habits
+
+Unauthenticated ─────────────→ DENIED (no authenticated role)
+
+User A (JWT: uid=aaa) ───────→ PostgreSQL applies:
+                                 WHERE user_id = 'aaa'
+                                 → Returns only User A's habits
+
+User B (JWT: uid=bbb) ───────→ PostgreSQL applies:
+                                 WHERE user_id = 'bbb'
+                                 → Returns only User B's habits
+
+                   SELECT * FROM challenges
+
+User A or B ──────────────────→ PostgreSQL applies:
+                                 WHERE true (public read)
+                                 → Returns ALL challenges
+```
+
+---
+
+*End of Technical Breakdown*
