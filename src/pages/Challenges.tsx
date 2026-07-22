@@ -88,8 +88,8 @@ export default function Challenges() {
     const profileMap: Record<string, string> = {};
     (profilesData || []).forEach((p: any) => { profileMap[p.id] = p.username || "unknown"; });
 
-    const [likesRes, participantsRes, commentsRes, userLikesRes, userBookmarksRes, userParticipatingRes] = await Promise.all([
-      supabase.from("challenge_likes").select("challenge_id").in("challenge_id", challengeIds),
+    const [likesCountRes, participantsRes, commentsRes, userLikesRes, userBookmarksRes, userParticipatingRes] = await Promise.all([
+      supabase.rpc("get_challenge_like_counts", { challenge_ids: challengeIds }),
       supabase.from("challenge_participants").select("challenge_id").in("challenge_id", challengeIds),
       supabase.from("challenge_comments").select("challenge_id").in("challenge_id", challengeIds),
       supabase.from("challenge_likes").select("challenge_id").eq("user_id", user.id).in("challenge_id", challengeIds),
@@ -103,7 +103,8 @@ export default function Challenges() {
       return map;
     };
 
-    const likesCounts = countBy(likesRes.data);
+    const likesCounts: Record<string, number> = {};
+    (likesCountRes.data || []).forEach((r: { challenge_id: string; count: number }) => { likesCounts[r.challenge_id] = Number(r.count) || 0; });
     const participantsCounts = countBy(participantsRes.data);
     const commentsCounts = countBy(commentsRes.data);
     const userLikedSet = new Set((userLikesRes.data || []).map((r) => r.challenge_id));

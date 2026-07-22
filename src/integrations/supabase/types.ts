@@ -365,6 +365,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_challenge_like_counts: {
+        Args: { challenge_ids: string[] }
+        Returns: {
+          challenge_id: string
+          count: number
+        }[]
+      }
       update_login_streak: {
         Args: { p_user_id: string }
         Returns: {
