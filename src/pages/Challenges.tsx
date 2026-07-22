@@ -88,8 +88,8 @@ export default function Challenges() {
     const profileMap: Record<string, string> = {};
     (profilesData || []).forEach((p: any) => { profileMap[p.id] = p.username || "unknown"; });
 
-    const [likesRes, participantsRes, commentsRes, userLikesRes, userBookmarksRes, userParticipatingRes] = await Promise.all([
-      supabase.from("challenge_likes").select("challenge_id").in("challenge_id", challengeIds),
+    const [likesCountRes, participantsRes, commentsRes, userLikesRes, userBookmarksRes, userParticipatingRes] = await Promise.all([
+      supabase.rpc("get_challenge_like_counts", { challenge_ids: challengeIds }),
       supabase.from("challenge_participants").select("challenge_id").in("challenge_id", challengeIds),
       supabase.from("challenge_comments").select("challenge_id").in("challenge_id", challengeIds),
       supabase.from("challenge_likes").select("challenge_id").eq("user_id", user.id).in("challenge_id", challengeIds),
