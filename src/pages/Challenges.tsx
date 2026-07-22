@@ -103,7 +103,8 @@ export default function Challenges() {
       return map;
     };
 
-    const likesCounts = countBy(likesRes.data);
+    const likesCounts: Record<string, number> = {};
+    (likesCountRes.data || []).forEach((r: { challenge_id: string; count: number }) => { likesCounts[r.challenge_id] = Number(r.count) || 0; });
     const participantsCounts = countBy(participantsRes.data);
     const commentsCounts = countBy(commentsRes.data);
     const userLikedSet = new Set((userLikesRes.data || []).map((r) => r.challenge_id));
