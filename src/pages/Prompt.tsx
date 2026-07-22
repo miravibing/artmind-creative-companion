@@ -54,6 +54,10 @@ export default function Prompt() {
       toast({ title: "Select categories", description: "Pick at least one art fundamental to generate prompts.", variant: "destructive" });
       return;
     }
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in to generate AI-powered prompts.", variant: "destructive" });
+      return;
+    }
 
     setIsGenerating(true);
     setIsAnimating(true);
